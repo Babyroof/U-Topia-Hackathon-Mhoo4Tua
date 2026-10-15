@@ -57,7 +57,10 @@ export const useRole = () => {
 
 export const HeaderMenuLinks = () => {
   const pathname = usePathname();
+  const { address } = useAccount();
   const { isPartner, isAdmin } = useRole();
+  const { data: requests } = useScaffoldReadContract({ contractName: "RWAToken", functionName: "getAllRequests" });
+  const pendingForMe = (requests ?? []).filter(r => r.status === 1 && sameAddress(r.partner, address)).length;
   const { targetNetwork } = useTargetNetwork();
   const links = [
     ...USER_LINKS,
@@ -81,6 +84,9 @@ export const HeaderMenuLinks = () => {
             >
               {icon}
               <span>{label}</span>
+              {href === "/partner/requests" && pendingForMe > 0 && (
+                <span className="badge badge-warning badge-sm">{pendingForMe}</span>
+              )}
             </Link>
           </li>
         );

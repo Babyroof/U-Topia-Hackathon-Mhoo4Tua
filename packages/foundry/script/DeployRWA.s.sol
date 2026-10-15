@@ -14,6 +14,9 @@ contract DeployRWA is ScaffoldETHDeploy {
         // Deployer = platform admin. Admin adds partners; partners cannot add partners.
         RWAToken rwa = new RWAToken(deployer);
 
+        // Demo partner wallet (all chains)
+        rwa.setPartner(0xB774b83EDF56CbEEa3E0d3f0f3EE703d79B52A9f, "[Example] Land Office", true);
+
         // Local chain only: a ready-made demo partner (Anvil test account #2, public test key).
         // On Fuji, the admin adds real partner wallets from the Admin page.
         if (block.chainid == 31337) {
