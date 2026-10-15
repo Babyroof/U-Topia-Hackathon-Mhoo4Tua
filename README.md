@@ -95,6 +95,26 @@ yarn deploy --network avalancheFuji
 
 Then set `targetNetworks: [chains.avalancheFuji]` in `packages/nextjs/scaffold.config.ts`.
 
+### Demo accounts
+
+The app never asks for a private key: every action is signed in your own wallet (MetaMask or Core).
+
+1. Create three accounts in your wallet: **admin** (the deployer), **partner**, **user**. On the local chain, import test accounts printed by `yarn chain` instead.
+2. Fund them with test AVAX from the Fuji faucet.
+3. As admin, open **Manage partners** and add the partner wallet.
+4. Use only fake deed data in demos (deed number `00000`, sub-district `[example]`).
+
+### Deed photos
+
+Photos are uploaded through `/api/upload` and stored in **Pinata private IPFS**. Only the requester and the request's partner can view them (`/api/deed-image`, after a free wallet signature). Set in `packages/nextjs/.env.local` (server-only):
+
+```
+PINATA_JWT=...
+PINATA_GATEWAY=your-gateway.mypinata.cloud
+```
+
+Without them, local dev stores photos in `packages/nextjs/.uploads/`. Run the web tests with `yarn next:test`.
+
 ## Legal note
 
 The token's legal effect comes from the **issuer accepting it in place of the paper**, not from the blockchain itself. Transfer rules differ by document type (delivery, endorsement, or assignment of claims under Thai CCC s.306). Partners shown in the pitch are **target partners**, not signed deals.

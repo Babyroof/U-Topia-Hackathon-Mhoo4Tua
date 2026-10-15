@@ -97,16 +97,21 @@ const DealCard = ({ deal }: { deal: Deal }) => {
           </div>
         )}
 
-        {isLocked && (
-          <div className="card-actions justify-end">
+        {isLocked && ((isSender && secondsLeft > 0) || canRelease) && (
+          <div className="card-actions justify-end items-center">
             {isSender && secondsLeft > 0 && (
               <button className="btn btn-sm btn-ghost" disabled={isMining} onClick={cancel}>
                 Cancel & take back
               </button>
             )}
-            <button className="btn btn-sm btn-primary" disabled={!canRelease || isMining} onClick={release}>
-              {isMining ? <span className="loading loading-spinner loading-xs" /> : "Release now"}
-            </button>
+            {canRelease && (
+              <>
+                <span className="text-xs opacity-60">Normally the system releases it automatically.</span>
+                <button className="btn btn-sm btn-primary" disabled={isMining} onClick={release}>
+                  {isMining ? <span className="loading loading-spinner loading-xs" /> : "Release now"}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -114,24 +119,22 @@ const DealCard = ({ deal }: { deal: Deal }) => {
   );
 };
 
-const TABS = ["Incoming", "Sent by me", "All"] as const;
+const TABS = ["Incoming", "Sent by me"] as const;
 
 const DealsPage: NextPage = () => {
   const { address } = useAccount();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("All");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Incoming");
   const { data: deals } = useScaffoldReadContract({ contractName: "ConditionalVault", functionName: "getAllDeals" });
 
   const list = (deals ?? [])
-    .filter(d =>
-      tab === "Incoming" ? sameAddress(d.to, address) : tab === "Sent by me" ? sameAddress(d.from, address) : true,
-    )
+    .filter(d => (tab === "Incoming" ? sameAddress(d.to, address) : sameAddress(d.from, address)))
     .slice()
     .reverse();
 
   return (
     <div className="flex flex-col items-center grow px-4 py-10 gap-6">
       <div className="w-full max-w-4xl">
-        <h1 className="text-4xl mb-2">Conditional transfers</h1>
+        <h1 className="text-4xl mb-2">My deals</h1>
         <p className="opacity-80">
           Each asset stays locked until its date, then goes to the receiver on its own. Nobody, the sender included, can
           sell or pledge it in the meantime.
@@ -146,7 +149,9 @@ const DealsPage: NextPage = () => {
         ))}
       </div>
 
-      {list.length === 0 ? (
+      {!address ? (
+        <p className="opacity-70">Connect your wallet to see your deals.</p>
+      ) : list.length === 0 ? (
         <p className="opacity-60">No transfers here yet.</p>
       ) : (
         <div className="grid gap-4 w-full max-w-4xl md:grid-cols-2">

@@ -6,6 +6,7 @@ import { isAddress } from "viem";
 import { useAccount } from "wagmi";
 import { Certificate } from "~~/components/rwa/Certificate";
 import { formatTime, sameAddress } from "~~/components/rwa/utils";
+import { addressError, hasErrors, unlockTimeError } from "~~/components/rwa/validation";
 import { useChainNow } from "~~/hooks/rwa/useChainNow";
 import {
   useDeployedContractInfo,
@@ -62,17 +63,26 @@ export const AssetCard = ({ tokenId, deals }: { tokenId: bigint; deals: readonly
   const [receiver, setReceiver] = useState("");
   const [unlockOption, setUnlockOption] = useState(UNLOCK_OPTIONS[0].seconds);
   const [customDate, setCustomDate] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const busy = rwaMining || vaultMining;
   const history = deals.filter(d => d.tokenId === tokenId);
 
   const unlockTime =
     unlockOption > 0 ? chainNow + unlockOption : customDate ? Math.floor(new Date(customDate).getTime() / 1000) : 0;
-  const receiverOk = isAddress(receiver) && !sameAddress(receiver, address);
-  const canSend = receiverOk && unlockTime > chainNow && !!rwaInfo && !!vaultInfo;
+  const errors = { receiver: addressError(receiver, address), time: unlockTimeError(unlockTime, chainNow) };
+
+  const resetSend = () => {
+    setMode("idle");
+    setReceiver("");
+    setUnlockOption(UNLOCK_OPTIONS[0].seconds);
+    setCustomDate("");
+    setSubmitted(false);
+  };
 
   const handleSend = async () => {
-    if (!canSend || !rwaInfo || !vaultInfo || !isAddress(receiver)) return;
+    setSubmitted(true);
+    if (hasErrors(errors) || !rwaInfo || !vaultInfo || !isAddress(receiver)) return;
     try {
       // 1) let the vault hold this NFT, 2) lock it for the receiver
       await writeRwa({ functionName: "approve", args: [vaultInfo.address, tokenId] });
@@ -80,8 +90,7 @@ export const AssetCard = ({ tokenId, deals }: { tokenId: bigint; deals: readonly
         functionName: "createDeal",
         args: [tokenId, receiver, BigInt(unlockTime)],
       });
-      setMode("idle");
-      setReceiver("");
+      resetSend();
     } catch (e) {
       console.error("send failed", e);
     }
@@ -132,6 +141,7 @@ export const AssetCard = ({ tokenId, deals }: { tokenId: bigint; deals: readonly
         <div className="flex flex-col gap-2 bg-base-200 rounded-lg p-3">
           <span className="text-sm font-semibold">Send to</span>
           <AddressInput value={receiver} onChange={setReceiver} placeholder="Receiver's wallet address" />
+          {submitted && errors.receiver && <span className="text-sm text-error">{errors.receiver}</span>}
           <label className="text-sm font-semibold mt-1" htmlFor={`when-${tokenId}`}>
             Release it
           </label>
@@ -155,16 +165,20 @@ export const AssetCard = ({ tokenId, deals }: { tokenId: bigint; deals: readonly
               onChange={e => setCustomDate(e.target.value)}
             />
           )}
-          {unlockTime > 0 && <p className="text-xs opacity-70 m-0">Unlocks {formatTime(unlockTime)}</p>}
+          {submitted && errors.time ? (
+            <span className="text-sm text-error">{errors.time}</span>
+          ) : (
+            unlockTime > 0 && <p className="text-xs opacity-70 m-0">Unlocks {formatTime(unlockTime)}</p>
+          )}
           <p className="text-xs opacity-60 m-0">
             Your wallet asks twice: once to let the vault hold it, once to lock it. Until then nobody, you included, can
             sell or pledge it.
           </p>
           <div className="flex gap-2 justify-end">
-            <button className="btn btn-sm btn-ghost" onClick={() => setMode("idle")} disabled={busy}>
+            <button className="btn btn-sm btn-ghost" onClick={resetSend} disabled={busy}>
               Back
             </button>
-            <button className="btn btn-sm btn-primary" disabled={!canSend || busy} onClick={handleSend}>
+            <button className="btn btn-sm btn-primary" disabled={busy} onClick={handleSend}>
               {busy ? <span className="loading loading-spinner loading-xs" /> : "Lock and send"}
             </button>
           </div>

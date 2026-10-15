@@ -6,7 +6,7 @@ import { type Address, getAddress, isAddress, verifyMessage } from "viem";
  */
 export const SIGNATURE_TTL_SECONDS = 10 * 60;
 
-const HEADER = "RWA Vault: ยืนยันว่าเป็นเจ้าของ wallet นี้ เพื่อใช้งานรูปโฉนด (ไม่มีค่าใช้จ่าย)";
+const HEADER = "RWA Vault: confirm you control this wallet to use deed photos (free, not a transaction)";
 
 export const buildViewerMessage = (address: string, issuedAt: number) =>
   `${HEADER}\nwallet: ${getAddress(address)}\ntime: ${issuedAt}`;
@@ -33,7 +33,7 @@ export const verifyViewer = async (
   }
 };
 
-/** Header names carrying the signed message (URI-encoded, since headers can't hold Thai text) and signature. */
+/** Header names carrying the signed message (URI-encoded so any text is header-safe) and signature. */
 export const AUTH_HEADERS = { message: "x-rwa-message", signature: "x-rwa-signature" } as const;
 
 export const verifyViewerHeaders = (headers: Headers) => {

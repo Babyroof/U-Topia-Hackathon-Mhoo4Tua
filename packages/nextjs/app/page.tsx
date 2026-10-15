@@ -33,7 +33,7 @@ const Home: NextPage = () => {
           </p>
           <div className="flex gap-3 flex-wrap">
             {role === "admin" ? (
-              <Link href="/admin" className="btn btn-primary">
+              <Link href="/admin/partners" className="btn btn-primary">
                 Manage partners
               </Link>
             ) : role === "partner" ? (

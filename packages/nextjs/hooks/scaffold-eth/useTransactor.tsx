@@ -4,6 +4,7 @@ import { getPublicClient } from "wagmi/actions";
 import { SendTransactionMutate } from "wagmi/query";
 import scaffoldConfig from "~~/scaffold.config";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
+import { friendlyError } from "~~/utils/rwa/errors";
 import { AllowedChainIds, getBlockExplorerTxLink, notification } from "~~/utils/scaffold-eth";
 import { TransactorFuncOptions, getParsedErrorWithAllAbis } from "~~/utils/scaffold-eth/contract";
 
@@ -57,7 +58,7 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       // Get full transaction from public client
       const publicClient = getPublicClient(wagmiConfig);
 
-      notificationId = notification.loading(<TxnNotification message="Awaiting for user confirmation" />);
+      notificationId = notification.loading(<TxnNotification message="Confirm in your wallet" />);
       if (typeof tx === "function") {
         // Tx is already prepared by the caller
         const result = await tx();
@@ -72,7 +73,7 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       blockExplorerTxURL = chainId ? getBlockExplorerTxLink(chainId, transactionHash) : "";
 
       notificationId = notification.loading(
-        <TxnNotification message="Waiting for transaction to complete." blockExplorerLink={blockExplorerTxURL} />,
+        <TxnNotification message="Saving to the blockchain…" blockExplorerLink={blockExplorerTxURL} />,
       );
 
       transactionReceipt = await publicClient.waitForTransactionReceipt({
@@ -83,12 +84,9 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
 
       if (transactionReceipt.status === "reverted") throw new Error("Transaction reverted");
 
-      notification.success(
-        <TxnNotification message="Transaction completed successfully!" blockExplorerLink={blockExplorerTxURL} />,
-        {
-          icon: "🎉",
-        },
-      );
+      notification.success(<TxnNotification message="Done!" blockExplorerLink={blockExplorerTxURL} />, {
+        icon: "🎉",
+      });
 
       if (options?.onBlockConfirmation) options.onBlockConfirmation(transactionReceipt);
     } catch (error: any) {
@@ -96,7 +94,7 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
         notification.remove(notificationId);
       }
       console.error("⚡️ ~ file: useTransactor.ts ~ error", error);
-      const message = getParsedErrorWithAllAbis(error, chainId as AllowedChainIds);
+      const message = friendlyError(getParsedErrorWithAllAbis(error, chainId as AllowedChainIds));
 
       // if receipt was reverted, show notification with block explorer link and return error
       if (transactionReceipt?.status === "reverted") {

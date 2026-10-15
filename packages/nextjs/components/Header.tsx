@@ -7,6 +7,7 @@ import { hardhat } from "viem/chains";
 import { useAccount } from "wagmi";
 import { Bars3Icon, BugAntIcon } from "@heroicons/react/24/outline";
 import { AutoReleaser } from "~~/components/rwa/AutoReleaser";
+import { RequestNotifier } from "~~/components/rwa/RequestNotifier";
 import { sameAddress } from "~~/components/rwa/utils";
 import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 import { useOutsideClick, useScaffoldReadContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
@@ -17,31 +18,25 @@ type HeaderMenuLink = {
   icon?: React.ReactNode;
 };
 
-const OWNER_LINKS: HeaderMenuLink[] = [
-  { label: "Home", href: "/" },
-  { label: "Tokenize", href: "/tokenize" },
+const USER_LINKS: HeaderMenuLink[] = [
   { label: "My Vault", href: "/vault" },
-  { label: "Transfers", href: "/deals" },
+  { label: "My requests", href: "/requests" },
+  { label: "My deals", href: "/deals" },
 ];
 
 const PARTNER_LINKS: HeaderMenuLink[] = [
-  { label: "Home", href: "/" },
   { label: "Partner desk", href: "/partner" },
-  { label: "Transfers", href: "/deals" },
+  { label: "Pending requests", href: "/partner/requests" },
 ];
 
-const ADMIN_LINKS: HeaderMenuLink[] = [
-  { label: "Home", href: "/" },
-  { label: "Admin", href: "/admin" },
-  { label: "Transfers", href: "/deals" },
-];
+const ADMIN_LINKS: HeaderMenuLink[] = [{ label: "Manage partners", href: "/admin/partners" }];
 
 const DEBUG_LINK: HeaderMenuLink = { label: "Debug", href: "/debug", icon: <BugAntIcon className="h-4 w-4" /> };
 
-/** Admin, partners (custodians) and owners see different menus, based on the connected wallet. */
+/** What the connected wallet may do: everyone is a user; partners and the admin get extra pages. */
 export const useRole = () => {
   const { address } = useAccount();
-  const { data: isPartner } = useScaffoldReadContract({
+  const { data: isPartner, isLoading: partnerLoading } = useScaffoldReadContract({
     contractName: "RWAToken",
     functionName: "isPartner",
     args: [address],
@@ -51,17 +46,25 @@ export const useRole = () => {
     functionName: "partnerName",
     args: [address],
   });
-  const { data: admin } = useScaffoldReadContract({ contractName: "RWAToken", functionName: "admin" });
+  const { data: admin, isLoading: adminLoading } = useScaffoldReadContract({
+    contractName: "RWAToken",
+    functionName: "admin",
+  });
   const isAdmin = sameAddress(admin, address);
   const role: "admin" | "partner" | "owner" = isAdmin ? "admin" : isPartner ? "partner" : "owner";
-  return { role, isAdmin, isPartner: !!isPartner, partnerName };
+  return { role, isAdmin, isPartner: !!isPartner, partnerName, isLoading: partnerLoading || adminLoading };
 };
 
 export const HeaderMenuLinks = () => {
   const pathname = usePathname();
-  const { role } = useRole();
-  const base = role === "admin" ? ADMIN_LINKS : role === "partner" ? PARTNER_LINKS : OWNER_LINKS;
-  const links = [...base, DEBUG_LINK];
+  const { isPartner, isAdmin } = useRole();
+  const { targetNetwork } = useTargetNetwork();
+  const links = [
+    ...USER_LINKS,
+    ...(isPartner ? PARTNER_LINKS : []),
+    ...(isAdmin ? ADMIN_LINKS : []),
+    ...(targetNetwork.id === hardhat.id ? [DEBUG_LINK] : []),
+  ];
 
   return (
     <>
@@ -93,7 +96,7 @@ const RoleBadge = () => {
   if (role === "admin") return <span className="badge badge-primary hidden md:inline-flex mr-2">Platform admin</span>;
   return role === "partner" ? (
     <span className="badge badge-secondary hidden md:inline-flex mr-2 whitespace-nowrap">
-      Partner: {partnerName || "Custodian"}
+      Partner: {partnerName || "Partner"}
     </span>
   ) : (
     <span className="badge badge-outline hidden md:inline-flex mr-2">Owner</span>
@@ -139,6 +142,7 @@ export const Header = () => {
         </ul>
       </div>
       <AutoReleaser />
+      <RequestNotifier />
       <div className="navbar-end grow mr-4">
         <RoleBadge />
         <RainbowKitCustomConnectButton />

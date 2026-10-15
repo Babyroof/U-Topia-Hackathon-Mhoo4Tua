@@ -6,6 +6,8 @@ import type { DeedPhoto } from "~~/utils/rwa/deed";
 
 const MAX_MB = 5;
 
+class UploadError extends Error {}
+
 /** Picks a photo file and uploads it to our server (which stores it privately); the user never types a link. */
 export const ImageUpload = ({
   label,
@@ -37,11 +39,11 @@ export const ImageUpload = ({
     onChange(undefined);
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setUploadError("รองรับเฉพาะรูป JPG, PNG หรือ WEBP");
+      setUploadError("Only JPG, PNG or WEBP photos are accepted");
       return;
     }
     if (file.size > MAX_MB * 1024 * 1024) {
-      setUploadError(`ไฟล์ใหญ่เกิน ${MAX_MB}MB`);
+      setUploadError(`File is larger than ${MAX_MB} MB`);
       return;
     }
     setUploading(true);
@@ -50,11 +52,11 @@ export const ImageUpload = ({
       body.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", headers: await getAuth(), body });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "อัปโหลดไม่สำเร็จ");
+      if (!res.ok) throw new UploadError(json.error ?? "Upload failed, please try again");
       setPreview(URL.createObjectURL(file));
       onChange({ ref: json.ref, sha256: json.sha256 });
     } catch (e) {
-      setUploadError(e instanceof Error && /[ก-๙]/.test(e.message) ? e.message : "อัปโหลดไม่สำเร็จ ลองใหม่อีกครั้ง");
+      setUploadError(e instanceof UploadError ? e.message : "Upload failed, please try again");
       if (inputRef.current) inputRef.current.value = "";
     } finally {
       setUploading(false);

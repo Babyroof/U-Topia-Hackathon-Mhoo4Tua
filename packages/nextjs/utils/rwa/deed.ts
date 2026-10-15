@@ -37,7 +37,7 @@ export const decodeDeed = (json?: string): DeedDetails | undefined => {
 };
 
 export const deedTitle = (serial: string, d?: DeedDetails) =>
-  d ? `โฉนดเลขที่ ${serial} ต.${d.tambon} อ.${d.amphoe} จ.${d.province}` : `โฉนดเลขที่ ${serial}`;
+  d ? `Deed no. ${serial}, ${d.tambon}, ${d.amphoe}, ${d.province}` : `Deed no. ${serial}`;
 
 export const formatArea = (d?: DeedDetails) =>
-  d ? `${d.area.rai || 0} ไร่ ${d.area.ngan || 0} งาน ${d.area.wa || 0} ตารางวา` : "-";
+  d ? `${d.area.rai || 0} rai ${d.area.ngan || 0} ngan ${d.area.wa || 0} sq. wa` : "-";
