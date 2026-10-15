@@ -36,3 +36,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 ipfs-upload.config.json
+
+# deed photos stored locally when PINATA_JWT is not set (dev only)
+/.uploads/

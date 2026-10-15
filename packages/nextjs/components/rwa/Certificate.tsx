@@ -17,7 +17,6 @@ type CertificateProps = {
   issuerName?: string;
   issuer?: ReactNode;
   issuedAt?: bigint | number;
-  imageURI?: string;
   locked?: boolean;
   stampText?: string;
   stampClassName?: string;
@@ -33,7 +32,6 @@ export const Certificate = ({
   issuerName,
   issuer,
   issuedAt,
-  imageURI,
   locked,
   stampText,
   stampClassName = "",
@@ -52,11 +50,6 @@ export const Certificate = ({
           <h3 className="text-2xl leading-tight m-0 break-words">{name ?? "Loading…"}</h3>
         </div>
       </header>
-
-      {imageURI && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={imageURI} alt={name ?? "Asset photo"} className="w-full h-40 object-cover rounded" />
-      )}
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm m-0">
         <dt className="opacity-60">Number</dt>
