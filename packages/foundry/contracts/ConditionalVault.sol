@@ -10,6 +10,8 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
  *         - While locked, nobody (including A) can sell or pledge the NFT elsewhere: the vault holds it.
  *         - From `unlockTime`, anyone can call `release` and the NFT goes to B.
  *         - A can `cancel` before `unlockTime` and get the NFT back.
+ *         Automatic release: `checkUpkeep` / `performUpkeep` follow the Chainlink Automation interface,
+ *         so a keeper (Chainlink Automation, or our own bot) can release due deals without anyone clicking.
  */
 contract ConditionalVault is ReentrancyGuard {
     enum Status {
@@ -31,6 +33,7 @@ contract ConditionalVault is ReentrancyGuard {
     }
 
     Deal[] private _deals;
+    uint256 public constant MAX_BATCH = 20;
 
     event DealCreated(
         uint256 indexed id, address indexed from, address indexed to, address nft, uint256 tokenId, uint64 unlockTime
@@ -78,6 +81,45 @@ contract ConditionalVault is ReentrancyGuard {
         if (d.status != Status.Locked) revert NotLocked();
         if (block.timestamp < d.unlockTime) revert TooEarly();
 
+        _release(id);
+    }
+
+    // ---------- Automatic release (Chainlink Automation compatible) ----------
+
+    /// @notice Ids of locked deals whose time has come (max MAX_BATCH).
+    function releasable() public view returns (uint256[] memory ids) {
+        uint256 count;
+        for (uint256 i = 0; i < _deals.length && count < MAX_BATCH; i++) {
+            if (_isDue(i)) count++;
+        }
+        ids = new uint256[](count);
+        uint256 j;
+        for (uint256 i = 0; i < _deals.length && j < count; i++) {
+            if (_isDue(i)) ids[j++] = i;
+        }
+    }
+
+    function checkUpkeep(bytes calldata) external view returns (bool upkeepNeeded, bytes memory performData) {
+        uint256[] memory ids = releasable();
+        upkeepNeeded = ids.length > 0;
+        performData = abi.encode(ids);
+    }
+
+    /// @notice Anyone (a keeper) can call; releases every due deal in `performData`, skips the rest.
+    function performUpkeep(bytes calldata performData) external nonReentrant {
+        uint256[] memory ids = abi.decode(performData, (uint256[]));
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (ids[i] < _deals.length && _isDue(ids[i])) _release(ids[i]);
+        }
+    }
+
+    function _isDue(uint256 id) internal view returns (bool) {
+        Deal storage d = _deals[id];
+        return d.status == Status.Locked && block.timestamp >= d.unlockTime;
+    }
+
+    function _release(uint256 id) internal {
+        Deal storage d = _deals[id];
         d.status = Status.Released;
         IERC721(d.nft).transferFrom(address(this), d.to, d.tokenId);
         emit Released(id, d.to);

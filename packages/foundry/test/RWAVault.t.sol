@@ -111,21 +111,106 @@ contract RWAVaultTest is Test {
         rwa.issue(eve, "Luxury Watch", "Submariner", "SN-001", "");
     }
 
+    function testPartnerCannotAddPartner() public {
+        vm.prank(partner);
+        vm.expectRevert(RWAToken.NotAdmin.selector);
+        rwa.setPartner(eve, "sneaky", true);
+    }
+
+    function testAdminListsAndDeactivatesPartners() public {
+        vm.startPrank(admin);
+        rwa.setPartner(eve, "Gold Vault Co", true);
+        rwa.setPartner(eve, "Gold Vault Co", false); // deactivate: not listed twice
+        vm.stopPrank();
+        assertEq(rwa.getPartners().length, 2);
+        assertFalse(rwa.isPartner(eve));
+
+        vm.prank(eve);
+        vm.expectRevert(RWAToken.NotPartner.selector);
+        rwa.issue(eve, "Gold Bar", "1kg bar", "GB-1", "");
+    }
+
+    function testAnyAssetTypeButNotEmpty() public {
+        vm.prank(alice);
+        rwa.requestTokenize(partner, "Vintage Guitar", "1959 Les Paul", "GT-59", "");
+
+        vm.prank(alice);
+        vm.expectRevert(RWAToken.EmptyField.selector);
+        rwa.requestTokenize(partner, "", "Something", "X-1", "");
+    }
+
     function testOnlyAdminSetsPartner() public {
         vm.prank(eve);
         vm.expectRevert(RWAToken.NotAdmin.selector);
         rwa.setPartner(eve, "x", true);
     }
 
-    function testHolderRedeemsAndBurns() public {
+    function testRedeemNeedsIssuerToConfirm() public {
         uint256 id = _issueToAlice("SN-001");
         vm.prank(eve);
         vm.expectRevert(RWAToken.NotHolder.selector);
-        rwa.redeem(id);
+        rwa.requestRedeem(id);
 
         vm.prank(alice);
-        rwa.redeem(id);
+        uint256 rid = rwa.requestRedeem(id);
+        assertEq(rwa.ownerOf(id), address(rwa)); // parked, not burned yet
+        assertTrue(rwa.exists(id));
+
+        vm.prank(eve);
+        vm.expectRevert(RWAToken.NotIssuer.selector);
+        rwa.confirmRedeem(rid);
+
+        vm.prank(partner);
+        rwa.confirmRedeem(rid);
         assertFalse(rwa.exists(id));
+        assertEq(uint256(rwa.getAllRedemptions()[rid].status), uint256(RWAToken.RedeemStatus.Completed));
+
+        vm.prank(partner);
+        vm.expectRevert(RWAToken.RedemptionNotPending.selector);
+        rwa.confirmRedeem(rid);
+    }
+
+    function testHolderCanCancelRedeem() public {
+        uint256 id = _issueToAlice("SN-001");
+        vm.prank(alice);
+        uint256 rid = rwa.requestRedeem(id);
+
+        vm.prank(partner);
+        vm.expectRevert(RWAToken.NotHolder.selector);
+        rwa.cancelRedeem(rid);
+
+        vm.prank(alice);
+        rwa.cancelRedeem(rid);
+        assertEq(rwa.ownerOf(id), alice);
+    }
+
+    function testKeeperReleasesDueDealsAutomatically() public {
+        uint256 id1 = _issueToAlice("SN-001");
+        uint256 id2 = _issueToAlice("SN-002");
+        uint256 id3 = _issueToAlice("SN-003");
+        _lock(id1, 1 days);
+        _lock(id2, 1 days);
+        _lock(id3, 10 days);
+
+        (bool needed,) = vault.checkUpkeep("");
+        assertFalse(needed);
+
+        vm.warp(block.timestamp + 1 days);
+        bytes memory data;
+        (needed, data) = vault.checkUpkeep("");
+        assertTrue(needed);
+        assertEq(vault.releasable().length, 2);
+
+        vm.prank(eve); // any keeper
+        vault.performUpkeep(data);
+        assertEq(rwa.ownerOf(id1), bob);
+        assertEq(rwa.ownerOf(id2), bob);
+        assertEq(rwa.ownerOf(id3), address(vault)); // not due yet, untouched
+
+        // replaying stale data is harmless
+        vault.performUpkeep(data);
+        (needed,) = vault.checkUpkeep("");
+        assertFalse(needed);
     }
 
     // ---------------- Flow 2: lock until time ----------------

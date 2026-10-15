@@ -14,7 +14,9 @@
 | 2. ตั้งเงื่อนไขโอน | A | `RWAToken.approve(vault, id)` แล้ว `ConditionalVault.createDeal(nft, id, B, unlockTime)` |
 | 2. ปล่อยให้ B | ใครก็ได้ | `ConditionalVault.release(id)` (เช็คก่อนด้วย `canRelease(id)`) |
 | 2. ยกเลิก | A | `cancel(id)` ได้ก่อนถึงเวลา |
-| ถอนของจริง | ผู้ถือ | `RWAToken.redeem(id)` → NFT ถูก burn |
+| ขอรับของจริง | ผู้ถือ | `RWAToken.requestRedeem(id)` → NFT ถูกพักไว้ใน contract · ยกเลิกได้ด้วย `cancelRedeem(rid)` |
+| ส่งมอบของ + burn | Partner (ผู้ออก) | `RWAToken.confirmRedeem(rid)` |
+| ปล่อยอัตโนมัติ | keeper | `ConditionalVault.checkUpkeep` → `performUpkeep` (เว็บเรียก `/api/keeper` ให้เอง) |
 
 ตัวอย่าง `assetType` ใน demo: `Luxury Watch` (serial = เลขเครื่อง) และ `Land Title Deed` (serial = เลขโฉนด) ทำเป็น dropdown 2 ตัวนี้
 

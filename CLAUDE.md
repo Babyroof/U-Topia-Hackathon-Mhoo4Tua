@@ -11,11 +11,12 @@ Framework guidance (Scaffold-ETH 2, hooks, components) lives in `AGENTS.md`. The
 - Team: 3 developers new to Web3 (strong in Web2/React) + 1 UX/business. Explain Web3 concepts briefly when you introduce them.
 
 ## What we are building: RWA Vault (working name)
-Single-original documents / real assets ("whoever holds the original has the right") become **one NFT, 1:1**, issued by a trusted partner. Full spec: `README.md`. Demo examples: **Luxury Watch** and **Land Title Deed** (`assetType` values).
+Single-original documents / real assets ("whoever holds the original has the right") become **one NFT, 1:1**, issued by a trusted partner. Full spec: `README.md`. Demo scope: **Land Title Deed** only (UI). Roles: admin (deployer) adds partners at `/admin`; partners approve at `/partner`; owners use Tokenize / My Vault / Transfers.
 
 - **Flow 1 Tokenize:** A `requestTokenize(partner, …)` → partner `approveRequest` (or `rejectRequest`) → NFT minted to A. Same serial can never be minted twice.
 - **Flow 2 Transfer with conditions:** A `approve(vault, id)` → `createDeal(nft, id, B, unlockTime)` → NFT locked → anyone calls `release` once time is reached → NFT to B. A can `cancel` before unlock.
-- **Redeem:** holder `redeem(id)` → NFT burned, partner hands over the real item.
+- **Redeem:** holder `requestRedeem(id)` → NFT parked in contract → issuing partner `confirmRedeem(rid)` after handover → burned. Holder can `cancelRedeem(rid)` before that.
+- **Auto-release:** vault `checkUpkeep`/`performUpkeep` (Chainlink Automation interface); `components/rwa/AutoReleaser.tsx` calls `app/api/keeper` (key: `KEEPER_PRIVATE_KEY`, local chain falls back to Anvil test key).
 
 | Contract (`packages/foundry/contracts`) | Purpose |
 |---|---|

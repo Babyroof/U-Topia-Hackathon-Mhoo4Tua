@@ -20,7 +20,7 @@ Some documents work on one rule: **whoever holds the original has the right.** T
 3. **Slow to transfer:** the original has to be physically handed over.
 4. **Nobody knows who holds it:** the same document gets pledged or sold to several lenders at once (double financing).
 
-**Demo examples:** 🕰️ **Luxury watch** (target partner: a bank with safe-custody service: verifies, stores, hands over on redeem) and 🏞️ **Land title deed** (target partner: the Land Department, which would accept the NFT as a mirror of its own register).
+**Demo scope:** 🏞️ **Land title deeds**. The partner (e.g. a bank that already holds deeds as loan collateral) checks the paper deed and the owner's ID, keeps the paper, and issues one token for it. The contracts accept any asset type, so other single-original assets can follow.
 
 ## Our solution
 
@@ -36,7 +36,9 @@ The **original issuer** (our partner) issues **one NFT** in place of the paper. 
 3. When the time is reached, the NFT goes straight to B's wallet.
 4. A can cancel before the unlock time and get the NFT back.
 
-**Redeem:** the holder redeems, the NFT is burned, and the partner hands over the real item.
+**Redeem:** the holder requests the real item back; the NFT is parked in the contract; the issuing partner hands the item over and confirms, which burns the NFT. The holder can cancel before that.
+
+**Automatic release:** the vault exposes `checkUpkeep` / `performUpkeep` (Chainlink Automation interface). In the demo our keeper (`/api/keeper`) releases due transfers on its own; in production Chainlink Automation would.
 
 ## Why on-chain
 
@@ -61,8 +63,8 @@ User ──► Next.js app ──► Wallet (sign) ──► Avalanche Fuji
 
 | Contract | Key functions |
 |---|---|
-| `RWAToken` | `requestTokenize`, `approveRequest`, `rejectRequest`, `issue`, `redeem`, `setPartner`, `getAsset`, `tokensOf`, `getAllRequests` |
-| `ConditionalVault` | `createDeal`, `release`, `cancel`, `getAllDeals`, `canRelease` |
+| `RWAToken` | `requestTokenize`, `approveRequest`, `rejectRequest`, `issue`, `requestRedeem`, `confirmRedeem`, `cancelRedeem`, `setPartner`, `getAsset`, `tokensOf`, `getAllRequests` |
+| `ConditionalVault` | `createDeal`, `release`, `cancel`, `checkUpkeep`, `performUpkeep`, `getAllDeals`, `canRelease` |
 
 | Layer | Tech |
 |---|---|

@@ -11,9 +11,14 @@ import { ConditionalVault } from "../contracts/ConditionalVault.sol";
  */
 contract DeployRWA is ScaffoldETHDeploy {
     function run() external ScaffoldEthDeployerRunner {
+        // Deployer = platform admin. Admin adds partners; partners cannot add partners.
         RWAToken rwa = new RWAToken(deployer);
-        // Deployer acts as the demo partner. Add real partner wallets later via setPartner.
-        rwa.setPartner(deployer, "Demo Custody Partner (mock)", true);
+
+        // Local chain only: a ready-made demo partner (Anvil test account #2, public test key).
+        // On Fuji, the admin adds real partner wallets from the Admin page.
+        if (block.chainid == 31337) {
+            rwa.setPartner(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, "Siam Custody Bank (demo)", true);
+        }
 
         new ConditionalVault();
     }

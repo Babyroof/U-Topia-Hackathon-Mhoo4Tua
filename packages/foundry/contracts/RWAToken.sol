@@ -14,7 +14,10 @@ import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  *  Rules enforced on-chain:
  *    - Only approved partners can issue; each NFT records which partner issued it.
  *    - The same serial / document number can be tokenized only once (no duplicates).
- *    - The holder can `redeem`: NFT is burned, partner hands over the real item.
+ *  Redeem (get the real item back):
+ *    1. Holder calls `requestRedeem` -> NFT is parked in this contract (can't be sold meanwhile).
+ *    2. The issuing partner hands over the item and calls `confirmRedeem` -> NFT is burned.
+ *       Before that, the holder can `cancelRedeem` and get the NFT back.
  *
  * @dev The token's legal effect comes from the issuer accepting it in place of the paper,
  *      not from the blockchain itself.
@@ -49,6 +52,22 @@ contract RWAToken is ERC721 {
         uint64 createdAt;
     }
 
+    enum RedeemStatus {
+        None,
+        Requested,
+        Completed,
+        Cancelled
+    }
+
+    struct Redemption {
+        uint256 id;
+        uint256 tokenId;
+        address holder;
+        address issuer;
+        RedeemStatus status;
+        uint64 requestedAt;
+    }
+
     address public admin;
     uint256 public nextTokenId = 1;
 
@@ -57,12 +76,17 @@ contract RWAToken is ERC721 {
     mapping(uint256 => Asset) private _assets;
     mapping(bytes32 => bool) public serialUsed; // keccak256(serial) => already tokenized?
     Request[] private _requests;
+    Redemption[] private _redemptions;
+    address[] private _partnerList;
+    mapping(address => bool) private _listed;
 
     event PartnerSet(address indexed partner, string name, bool active);
     event TokenizeRequested(uint256 indexed requestId, address indexed requester, address indexed partner);
     event RequestApproved(uint256 indexed requestId, uint256 indexed tokenId);
     event RequestRejected(uint256 indexed requestId, string reason);
     event AssetIssued(uint256 indexed tokenId, address indexed issuer, address indexed to, string serial);
+    event RedeemRequested(uint256 indexed redemptionId, uint256 indexed tokenId, address indexed holder);
+    event RedeemCancelled(uint256 indexed redemptionId, uint256 indexed tokenId);
     event Redeemed(uint256 indexed tokenId, address indexed holder, address indexed issuer);
 
     error NotAdmin();
@@ -72,6 +96,8 @@ contract RWAToken is ERC721 {
     error SerialAlreadyTokenized();
     error NotHolder();
     error EmptyField();
+    error NotIssuer();
+    error RedemptionNotPending();
 
     modifier onlyAdmin() {
         if (msg.sender != admin) revert NotAdmin();
@@ -84,7 +110,13 @@ contract RWAToken is ERC721 {
 
     // ---------- Admin (platform) ----------
 
+    /// @notice Only the platform admin can add, rename or deactivate partners. Partners cannot add partners.
     function setPartner(address partner, string calldata name, bool active) external onlyAdmin {
+        if (partner == address(0)) revert EmptyField();
+        if (!_listed[partner]) {
+            _listed[partner] = true;
+            _partnerList.push(partner);
+        }
         isPartner[partner] = active;
         partnerName[partner] = name;
         emit PartnerSet(partner, name, active);
@@ -100,7 +132,7 @@ contract RWAToken is ERC721 {
         string calldata imageURI
     ) external returns (uint256 requestId) {
         if (!isPartner[partner]) revert NotPartner();
-        if (bytes(serial).length == 0 || bytes(name).length == 0) revert EmptyField();
+        if (bytes(serial).length == 0 || bytes(name).length == 0 || bytes(assetType).length == 0) revert EmptyField();
         if (serialUsed[keccak256(bytes(serial))]) revert SerialAlreadyTokenized();
 
         requestId = _requests.length;
@@ -155,14 +187,48 @@ contract RWAToken is ERC721 {
         tokenId = _mintAsset(to, assetType, name, serial, imageURI, msg.sender);
     }
 
-    // ---------- Holder: redeem the real item ----------
+    // ---------- Redeem: holder requests, issuing partner confirms handover + burns ----------
 
-    function redeem(uint256 tokenId) external {
+    function requestRedeem(uint256 tokenId) external returns (uint256 redemptionId) {
         if (ownerOf(tokenId) != msg.sender) revert NotHolder();
         address issuer = _assets[tokenId].issuer;
-        _burn(tokenId);
+
+        // park the NFT here so it can't be sold or pledged while the handover happens
+        _transfer(msg.sender, address(this), tokenId);
+
+        redemptionId = _redemptions.length;
+        _redemptions.push(
+            Redemption({
+                id: redemptionId,
+                tokenId: tokenId,
+                holder: msg.sender,
+                issuer: issuer,
+                status: RedeemStatus.Requested,
+                requestedAt: uint64(block.timestamp)
+            })
+        );
+        emit RedeemRequested(redemptionId, tokenId, msg.sender);
+    }
+
+    function confirmRedeem(uint256 redemptionId) external {
+        Redemption storage r = _redemptions[redemptionId];
+        if (r.status != RedeemStatus.Requested) revert RedemptionNotPending();
+        if (msg.sender != r.issuer) revert NotIssuer();
+
+        r.status = RedeemStatus.Completed;
+        _burn(r.tokenId);
         // serial stays "used" so the same item cannot be silently re-tokenized
-        emit Redeemed(tokenId, msg.sender, issuer);
+        emit Redeemed(r.tokenId, r.holder, r.issuer);
+    }
+
+    function cancelRedeem(uint256 redemptionId) external {
+        Redemption storage r = _redemptions[redemptionId];
+        if (r.status != RedeemStatus.Requested) revert RedemptionNotPending();
+        if (msg.sender != r.holder) revert NotHolder();
+
+        r.status = RedeemStatus.Cancelled;
+        _transfer(address(this), r.holder, r.tokenId);
+        emit RedeemCancelled(redemptionId, r.tokenId);
     }
 
     // ---------- Internal ----------
@@ -175,7 +241,7 @@ contract RWAToken is ERC721 {
         string memory imageURI,
         address issuer
     ) internal returns (uint256 tokenId) {
-        if (bytes(serial).length == 0 || bytes(name).length == 0) revert EmptyField();
+        if (bytes(serial).length == 0 || bytes(name).length == 0 || bytes(assetType).length == 0) revert EmptyField();
         bytes32 key = keccak256(bytes(serial));
         if (serialUsed[key]) revert SerialAlreadyTokenized();
         serialUsed[key] = true;
@@ -227,5 +293,14 @@ contract RWAToken is ERC721 {
 
     function getAllRequests() external view returns (Request[] memory) {
         return _requests;
+    }
+
+    /// @notice Every address the admin has ever set (check `isPartner` for current status).
+    function getPartners() external view returns (address[] memory) {
+        return _partnerList;
+    }
+
+    function getAllRedemptions() external view returns (Redemption[] memory) {
+        return _redemptions;
     }
 }
