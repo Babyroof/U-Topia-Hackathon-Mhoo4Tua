@@ -2,6 +2,28 @@
 
 คู่มือนี้สรุปว่าทีมทำงานร่วมกันยังไงใน 24 ชั่วโมง อ่าน 5 นาทีพอ
 
+## 0. เรากำลังทำอะไร (RWA Vault)
+
+เอกสาร/ทรัพย์ที่มีต้นฉบับใบเดียว → partner ออก **NFT 1 ใบแทน (1:1)** → เจ้าของเก็บใน wallet → โอนให้คนอื่นแบบมีเงื่อนไขได้ (รายละเอียดเต็มใน `README.md`)
+
+| Flow | ใครกด | contract / function |
+|---|---|---|
+| 1. ขอแปลงสินทรัพย์ | A | `RWAToken.requestTokenize(partner, assetType, name, serial, imageURI)` |
+| 1. อนุมัติ / ปฏิเสธ | Partner | `RWAToken.approveRequest(id)` / `rejectRequest(id, reason)` |
+| ดูของที่ถือ | ทุกคน | `RWAToken.tokensOf(user)`, `getAsset(id)`, `partnerName(addr)`, `getAllRequests()` |
+| 2. ตั้งเงื่อนไขโอน | A | `RWAToken.approve(vault, id)` แล้ว `ConditionalVault.createDeal(nft, id, B, unlockTime)` |
+| 2. ปล่อยให้ B | ใครก็ได้ | `ConditionalVault.release(id)` (เช็คก่อนด้วย `canRelease(id)`) |
+| 2. ยกเลิก | A | `cancel(id)` ได้ก่อนถึงเวลา |
+| ถอนของจริง | ผู้ถือ | `RWAToken.redeem(id)` → NFT ถูก burn |
+
+ตัวอย่าง `assetType` ใน demo: `Luxury Watch` (serial = เลขเครื่อง) และ `Land Title Deed` (serial = เลขโฉนด) ทำเป็น dropdown 2 ตัวนี้
+
+เวลาเป็นวินาที (unix timestamp) ใน demo ให้ `unlockTime` = ตอนนี้ + 60 วินาที
+
+**หน้าเว็บที่ต้องมี:** Tokenize (A) · Partner inbox (อนุมัติ/ปฏิเสธ) · My Vault (ของที่ถือ + ประวัติจาก event `Transfer`) · Send with conditions · Deals (Release / Cancel) · Redeem
+
+**ฉากที่กรรมการต้องเห็น:** mint serial เดิมซ้ำ → ถูกปฏิเสธ · A เอาของที่ล็อกอยู่ไปขายซ้ำ → โอนไม่ได้
+
 ## 1. ครั้งแรกที่ clone repo
 
 ```bash
@@ -89,10 +111,11 @@ yarn deploy --network avalancheFuji
 - API key ใช้เฉพาะใน `app/api/**/route.ts`
 - ใช้ wallet ที่สร้างใหม่สำหรับงานนี้เท่านั้น
 
-## 10. เส้นตาย
+## 10. เส้นตาย (วันศุกร์ 16 ต.ค.)
 
 | เวลา | อะไร |
 |---|---|
-| พฤหัส 17:00 | flow หลักใช้ได้บน Fuji + deploy Vercel ครั้งแรก |
-| ศุกร์ 11:00 | Feature freeze |
-| ศุกร์ 13:45 | ส่งงานให้เสร็จ (ปิดรับ 14:00) |
+| 10:00 | มี Fuji AVAX ใน deployer address แล้ว |
+| 11:00 | flow 1 + 2 ใช้ได้บน Fuji · Feature freeze |
+| 12:00 | deploy Vercel + อัดวิดีโอ demo สำรอง |
+| 13:45 | ส่งงานให้เสร็จ (ปิดรับ 14:00) |
