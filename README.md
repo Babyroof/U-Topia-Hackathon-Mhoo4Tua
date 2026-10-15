@@ -1,83 +1,82 @@
-# 🏗 Scaffold-ETH 2
+# Project Name
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+> One-line pitch: who it helps and what changes for them.
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+Built in 24 hours at **U-Hackathon 2026 · Flow Summit Bangkok** (Web3 track) on **Avalanche**.
 
-> [!NOTE]
-> 🤖 Scaffold-ETH 2 is AI-ready! It has everything agents need to build on Ethereum. Check `.agents/`, `.claude/`, `.opencode` or `.cursor/` for more info.
+| | |
+|---|---|
+| 🌐 Live demo | _add Vercel link_ |
+| ⛓️ Contract (Avalanche Fuji) | _add address + Snowtrace link_ |
+| 🎞️ Pitch deck | _add link_ |
+| 🎥 Demo video | _add link_ |
 
-⚙️ Built using NextJS, RainbowKit, Foundry, Wagmi, Viem, and Typescript.
+## The problem
+_Who has this problem, a real example, and why existing solutions fail. 3–5 sentences._
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+## Our solution
+_What the user does, step by step, in plain words._
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+## Why on-chain
+_What would break if this ran on a normal database instead. Be specific: custody of funds, trust in an intermediary, verifiable history, etc._
 
-## Requirements
-
-Before you begin, you need to install the following tools:
-
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
-
-## Quickstart
-
-To get started with Scaffold-ETH 2, follow the steps below:
-
-1. Install dependencies if it was skipped in CLI:
+## How it works
 
 ```
-cd my-dapp-example
+User ──► Next.js app ──► Wallet (sign) ──► Smart contract on Avalanche Fuji
+              │
+              └──► API routes (AI / ElevenLabs)
+```
+
+| Layer | Tech |
+|---|---|
+| Smart contracts | Solidity, Foundry, OpenZeppelin |
+| Chain | Avalanche Fuji C-Chain |
+| Frontend | Next.js (App Router), RainbowKit, wagmi, viem, DaisyUI |
+| Off-chain | Next.js API routes, ElevenLabs (if used) |
+| CI | GitHub Actions: contract build + tests, lint, type check, secret scan |
+
+## Run locally
+
+Requirements: Node ≥ 20.18, Yarn (via `corepack enable`), Foundry.
+
+```bash
 yarn install
+yarn chain     # terminal 1: local blockchain
+yarn deploy    # terminal 2: deploy contracts + generate ABIs
+yarn start     # terminal 3: app on http://localhost:3000
 ```
 
-2. Run a local network in the first terminal:
+Run tests: `yarn test`
 
-```
-yarn chain
-```
+Deploy to Avalanche Fuji:
 
-This command starts a local Ethereum network using Foundry. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/foundry/foundry.toml`.
-
-3. On a second terminal, deploy the test contract:
-
-```
-yarn deploy
+```bash
+yarn generate                              # create a deployer keystore (once)
+yarn deploy --network avalancheFuji
 ```
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/foundry/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/foundry/script` to deploy the contract to the network. You can also customize the deploy script.
+Then set `targetNetworks: [chains.avalancheFuji]` in `packages/nextjs/scaffold.config.ts`.
 
-4. On a third terminal, start your NextJS app:
+## Repository layout
 
 ```
-yarn start
+packages/
+├── foundry/          Smart contracts, tests, deploy scripts
+└── nextjs/           Web app and API routes
+.claude/agents/       AI agents used by the team (writer + reviewer roles)
+.github/workflows/    CI checks
+docs/                 Team workflow
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+## Team
 
-Run smart contract test with `yarn foundry:test`
+| Name | Role |
+|---|---|
+| | Smart contracts |
+| | Frontend |
+| | API / AI / integration |
+| | Product, UX/UI, pitch |
 
-- Edit your smart contracts in `packages/foundry/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/foundry/script`
-
-
-## Documentation
-
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
-
-To know more about its features, check out our [website](https://scaffoldeth.io).
-
-## Contributing to Scaffold-ETH 2
-
-We welcome contributions to Scaffold-ETH 2!
-
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+## Acknowledgements
+Built with [Scaffold-ETH 2](https://scaffoldeth.io). Thanks to the U-Hackathon organizers, mentors and partners.

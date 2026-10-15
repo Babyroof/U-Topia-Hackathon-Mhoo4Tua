@@ -33,6 +33,10 @@ pgnTestnet = "https://sepolia.publicgoods.network"
 
 localhost = "http://127.0.0.1:8545"
 
+# Avalanche (U-Hackathon partner chain)
+avalancheFuji = "https://api.avax-test.network/ext/bc/C/rpc"
+avalanche = "https://api.avax.network/ext/bc/C/rpc"
+
 [etherscan]
 polygonMumbai = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
