@@ -32,6 +32,8 @@ contract ConditionalVault is ReentrancyGuard {
         uint64 createdAt;
     }
 
+    /// @notice The only NFT this vault accepts (RWAToken), so nobody can create look-alike deals with another contract.
+    IERC721 public immutable nft;
     Deal[] private _deals;
     uint256 public constant MAX_BATCH = 20;
 
@@ -48,8 +50,12 @@ contract ConditionalVault is ReentrancyGuard {
     error TooEarly();
     error TooLate();
 
-    /// @dev A must call `nft.approve(vault, tokenId)` first.
-    function createDeal(address nft, uint256 tokenId, address to, uint64 unlockTime)
+    constructor(address _nft) {
+        nft = IERC721(_nft);
+    }
+
+    /// @dev A must call `nft.approve(vault, tokenId)` (or `setApprovalForAll`) first. Only the holder can lock.
+    function createDeal(uint256 tokenId, address to, uint64 unlockTime)
         external
         nonReentrant
         returns (uint256 id)
@@ -57,7 +63,7 @@ contract ConditionalVault is ReentrancyGuard {
         if (to == address(0) || to == msg.sender) revert BadRecipient();
         if (unlockTime <= block.timestamp) revert BadTime();
 
-        IERC721(nft).transferFrom(msg.sender, address(this), tokenId);
+        nft.transferFrom(msg.sender, address(this), tokenId);
 
         id = _deals.length;
         _deals.push(
@@ -65,14 +71,14 @@ contract ConditionalVault is ReentrancyGuard {
                 id: id,
                 from: msg.sender,
                 to: to,
-                nft: nft,
+                nft: address(nft),
                 tokenId: tokenId,
                 unlockTime: unlockTime,
                 status: Status.Locked,
                 createdAt: uint64(block.timestamp)
             })
         );
-        emit DealCreated(id, msg.sender, to, nft, tokenId, unlockTime);
+        emit DealCreated(id, msg.sender, to, address(nft), tokenId, unlockTime);
     }
 
     /// @notice Anyone can trigger once the time is reached; the NFT always goes to B.
@@ -121,7 +127,7 @@ contract ConditionalVault is ReentrancyGuard {
     function _release(uint256 id) internal {
         Deal storage d = _deals[id];
         d.status = Status.Released;
-        IERC721(d.nft).transferFrom(address(this), d.to, d.tokenId);
+        nft.transferFrom(address(this), d.to, d.tokenId);
         emit Released(id, d.to);
     }
 
@@ -132,7 +138,7 @@ contract ConditionalVault is ReentrancyGuard {
         if (block.timestamp >= d.unlockTime) revert TooLate();
 
         d.status = Status.Cancelled;
-        IERC721(d.nft).transferFrom(address(this), d.from, d.tokenId);
+        nft.transferFrom(address(this), d.from, d.tokenId);
         emit Cancelled(id);
     }
 

@@ -126,11 +126,6 @@ const PartnerPage: NextPage = () => {
                   <div className="text-sm flex items-center gap-2 flex-wrap">
                     Requested by <Address address={r.requester} chain={targetNetwork} size="sm" />
                   </div>
-                  {r.imageURI && (
-                    <a className="link text-sm" href={r.imageURI} target="_blank" rel="noreferrer">
-                      View photo
-                    </a>
-                  )}
                   <div className="flex gap-2 justify-end mt-2 flex-wrap">
                     <input
                       className="input input-bordered input-sm grow min-w-0"

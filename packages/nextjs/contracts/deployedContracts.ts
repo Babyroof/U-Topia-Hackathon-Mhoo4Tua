@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     YourContract: {
-      address: "0x700b6a60ce7eaaea56f065753d8dcb9653dbad35",
+      address: "0xe1aa25618fa0c7a1cfdab5d6b456af611873b629",
       abi: [
         {
           type: "constructor",
@@ -148,10 +148,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 6,
+      deployedOnBlock: 313,
     },
     RWAToken: {
-      address: "0xa15bb66138824a1c7167f5e85b957d04dd34e468",
+      address: "0xe1da8919f262ee86f9be05059c9280142cf23f48",
       abi: [
         {
           type: "constructor",
@@ -252,6 +252,19 @@ const deployedContracts = {
           inputs: [
             {
               name: "redemptionId",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "confirmRegistration",
+          inputs: [
+            {
+              name: "tokenId",
               type: "uint256",
               internalType: "uint256",
             },
@@ -364,7 +377,7 @@ const deployedContracts = {
                   internalType: "string",
                 },
                 {
-                  name: "imageURI",
+                  name: "details",
                   type: "string",
                   internalType: "string",
                 },
@@ -382,6 +395,11 @@ const deployedContracts = {
                   name: "createdAt",
                   type: "uint64",
                   internalType: "uint64",
+                },
+                {
+                  name: "rejectReason",
+                  type: "string",
+                  internalType: "string",
                 },
               ],
             },
@@ -439,7 +457,7 @@ const deployedContracts = {
                   internalType: "string",
                 },
                 {
-                  name: "imageURI",
+                  name: "details",
                   type: "string",
                   internalType: "string",
                 },
@@ -518,7 +536,7 @@ const deployedContracts = {
                   internalType: "string",
                 },
                 {
-                  name: "imageURI",
+                  name: "details",
                   type: "string",
                   internalType: "string",
                 },
@@ -536,6 +554,11 @@ const deployedContracts = {
                   name: "createdAt",
                   type: "uint64",
                   internalType: "uint64",
+                },
+                {
+                  name: "rejectReason",
+                  type: "string",
+                  internalType: "string",
                 },
               ],
             },
@@ -587,45 +610,6 @@ const deployedContracts = {
         },
         {
           type: "function",
-          name: "issue",
-          inputs: [
-            {
-              name: "to",
-              type: "address",
-              internalType: "address",
-            },
-            {
-              name: "assetType",
-              type: "string",
-              internalType: "string",
-            },
-            {
-              name: "name",
-              type: "string",
-              internalType: "string",
-            },
-            {
-              name: "serial",
-              type: "string",
-              internalType: "string",
-            },
-            {
-              name: "imageURI",
-              type: "string",
-              internalType: "string",
-            },
-          ],
-          outputs: [
-            {
-              name: "tokenId",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
-          stateMutability: "nonpayable",
-        },
-        {
-          type: "function",
           name: "name",
           inputs: [],
           outputs: [
@@ -633,6 +617,25 @@ const deployedContracts = {
               name: "",
               type: "string",
               internalType: "string",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "needsRegistration",
+          inputs: [
+            {
+              name: "tokenId",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "bool",
+              internalType: "bool",
             },
           ],
           stateMutability: "view",
@@ -684,6 +687,44 @@ const deployedContracts = {
               name: "",
               type: "string",
               internalType: "string",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "pendingRegistrations",
+          inputs: [
+            {
+              name: "issuer",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "ids",
+              type: "uint256[]",
+              internalType: "uint256[]",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "registeredOwner",
+          inputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
             },
           ],
           stateMutability: "view",
@@ -763,7 +804,7 @@ const deployedContracts = {
               internalType: "string",
             },
             {
-              name: "imageURI",
+              name: "details",
               type: "string",
               internalType: "string",
             },
@@ -890,6 +931,19 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "setVault",
+          inputs: [
+            {
+              name: "_vault",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
           name: "supportsInterface",
           inputs: [
             {
@@ -980,6 +1034,19 @@ const deployedContracts = {
           ],
           outputs: [],
           stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "vault",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
         },
         {
           type: "event",
@@ -1158,6 +1225,31 @@ const deployedContracts = {
         },
         {
           type: "event",
+          name: "RegistrationConfirmed",
+          inputs: [
+            {
+              name: "tokenId",
+              type: "uint256",
+              indexed: true,
+              internalType: "uint256",
+            },
+            {
+              name: "owner",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "issuer",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
           name: "RequestApproved",
           inputs: [
             {
@@ -1240,6 +1332,19 @@ const deployedContracts = {
               type: "uint256",
               indexed: true,
               internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "VaultSet",
+          inputs: [
+            {
+              name: "vault",
+              type: "address",
+              indexed: false,
+              internalType: "address",
             },
           ],
           anonymous: false,
@@ -1379,6 +1484,11 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "NothingToRegister",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "RedemptionNotPending",
           inputs: [],
         },
@@ -1392,13 +1502,29 @@ const deployedContracts = {
           name: "SerialAlreadyTokenized",
           inputs: [],
         },
+        {
+          type: "error",
+          name: "VaultAlreadySet",
+          inputs: [],
+        },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 6,
+      deployedOnBlock: 313,
     },
     ConditionalVault: {
-      address: "0x8ce361602b935680e8dec218b820ff5056beb7af",
+      address: "0xed1db453c3156ff3155a97ad217b3087d5dc5f6e",
       abi: [
+        {
+          type: "constructor",
+          inputs: [
+            {
+              name: "_nft",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+        },
         {
           type: "function",
           name: "MAX_BATCH",
@@ -1472,11 +1598,6 @@ const deployedContracts = {
           type: "function",
           name: "createDeal",
           inputs: [
-            {
-              name: "nft",
-              type: "address",
-              internalType: "address",
-            },
             {
               name: "tokenId",
               type: "uint256",
@@ -1633,6 +1754,19 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "nft",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "contract IERC721",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
           name: "performUpkeep",
           inputs: [
             {
@@ -1782,7 +1916,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 6,
+      deployedOnBlock: 313,
     },
   },
 } as const;

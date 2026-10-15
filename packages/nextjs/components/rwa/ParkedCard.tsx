@@ -33,7 +33,6 @@ export const ParkedCard = ({ redemptionId, tokenId }: { redemptionId: bigint; to
       serial={asset?.serial}
       issuerName={issuerName}
       issuedAt={asset?.issuedAt}
-      imageURI={asset?.imageURI}
       stampText="Awaiting handover"
     >
       <p className="text-sm m-0">

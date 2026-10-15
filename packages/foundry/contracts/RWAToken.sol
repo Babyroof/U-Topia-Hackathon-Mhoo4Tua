@@ -12,8 +12,11 @@ import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  *    2. The partner checks the real item/document off-chain (and voids/stamps the paper original),
  *       then calls `approveRequest` -> NFT is minted to A. Or `rejectRequest`.
  *  Rules enforced on-chain:
- *    - Only approved partners can issue; each NFT records which partner issued it.
+ *    - Only approved partners can issue (only via a request); each NFT records which partner issued it.
  *    - The same serial / document number can be tokenized only once (no duplicates).
+ *  Land registration: after an NFT changes hands (e.g. a vault deal released to B), it stays
+ *    "waiting for registration" until the issuing partner confirms the transfer was registered
+ *    at the land office (`confirmRegistration`).
  *  Redeem (get the real item back):
  *    1. Holder calls `requestRedeem` -> NFT is parked in this contract (can't be sold meanwhile).
  *    2. The issuing partner hands over the item and calls `confirmRedeem` -> NFT is burned.
@@ -27,7 +30,7 @@ contract RWAToken is ERC721 {
         string assetType; // e.g. "Luxury Watch", "Warehouse Receipt"
         string name; // e.g. "Rolex Submariner 126610LN"
         string serial; // serial number / document number
-        string imageURI; // photo / scan / metadata link
+        string details; // JSON: deed fields + photo refs/hashes (see the web app's deed.ts)
         address issuer; // partner that verified it
         uint64 issuedAt;
     }
@@ -46,10 +49,11 @@ contract RWAToken is ERC721 {
         string assetType;
         string name;
         string serial;
-        string imageURI;
+        string details;
         RequestStatus status;
         uint256 tokenId; // set when approved
         uint64 createdAt;
+        string rejectReason;
     }
 
     enum RedeemStatus {
@@ -69,6 +73,7 @@ contract RWAToken is ERC721 {
     }
 
     address public admin;
+    address public vault; // ConditionalVault: holding a token there is not a change of owner
     uint256 public nextTokenId = 1;
 
     mapping(address => bool) public isPartner;
@@ -79,6 +84,7 @@ contract RWAToken is ERC721 {
     Redemption[] private _redemptions;
     address[] private _partnerList;
     mapping(address => bool) private _listed;
+    mapping(uint256 => address) public registeredOwner; // owner as last registered at the land office
 
     event PartnerSet(address indexed partner, string name, bool active);
     event TokenizeRequested(uint256 indexed requestId, address indexed requester, address indexed partner);
@@ -88,6 +94,8 @@ contract RWAToken is ERC721 {
     event RedeemRequested(uint256 indexed redemptionId, uint256 indexed tokenId, address indexed holder);
     event RedeemCancelled(uint256 indexed redemptionId, uint256 indexed tokenId);
     event Redeemed(uint256 indexed tokenId, address indexed holder, address indexed issuer);
+    event RegistrationConfirmed(uint256 indexed tokenId, address indexed owner, address indexed issuer);
+    event VaultSet(address vault);
 
     error NotAdmin();
     error NotPartner();
@@ -98,6 +106,8 @@ contract RWAToken is ERC721 {
     error EmptyField();
     error NotIssuer();
     error RedemptionNotPending();
+    error NothingToRegister();
+    error VaultAlreadySet();
 
     modifier onlyAdmin() {
         if (msg.sender != admin) revert NotAdmin();
@@ -122,6 +132,14 @@ contract RWAToken is ERC721 {
         emit PartnerSet(partner, name, active);
     }
 
+    /// @notice Set once at deploy so tokens locked in the vault don't count as "changed hands".
+    function setVault(address _vault) external onlyAdmin {
+        if (vault != address(0)) revert VaultAlreadySet();
+        if (_vault == address(0)) revert EmptyField();
+        vault = _vault;
+        emit VaultSet(_vault);
+    }
+
     // ---------- Flow 1: A requests, partner approves ----------
 
     function requestTokenize(
@@ -129,7 +147,7 @@ contract RWAToken is ERC721 {
         string calldata assetType,
         string calldata name,
         string calldata serial,
-        string calldata imageURI
+        string calldata details
     ) external returns (uint256 requestId) {
         if (!isPartner[partner]) revert NotPartner();
         if (bytes(serial).length == 0 || bytes(name).length == 0 || bytes(assetType).length == 0) revert EmptyField();
@@ -144,10 +162,11 @@ contract RWAToken is ERC721 {
                 assetType: assetType,
                 name: name,
                 serial: serial,
-                imageURI: imageURI,
+                details: details,
                 status: RequestStatus.Pending,
                 tokenId: 0,
-                createdAt: uint64(block.timestamp)
+                createdAt: uint64(block.timestamp),
+                rejectReason: ""
             })
         );
         emit TokenizeRequested(requestId, msg.sender, partner);
@@ -160,7 +179,7 @@ contract RWAToken is ERC721 {
         if (!isPartner[msg.sender]) revert NotPartner();
 
         r.status = RequestStatus.Approved;
-        tokenId = _mintAsset(r.requester, r.assetType, r.name, r.serial, r.imageURI, msg.sender);
+        tokenId = _mintAsset(r.requester, r.assetType, r.name, r.serial, r.details, msg.sender);
         r.tokenId = tokenId;
         emit RequestApproved(requestId, tokenId);
     }
@@ -169,22 +188,12 @@ contract RWAToken is ERC721 {
         Request storage r = _requests[requestId];
         if (r.status != RequestStatus.Pending) revert RequestNotPending();
         if (msg.sender != r.partner) revert NotRequestPartner();
+        if (!isPartner[msg.sender]) revert NotPartner();
+        if (bytes(reason).length == 0) revert EmptyField();
 
         r.status = RequestStatus.Rejected;
+        r.rejectReason = reason;
         emit RequestRejected(requestId, reason);
-    }
-
-    // ---------- Partner: direct issue (e.g. partner onboarding an item at the counter) ----------
-
-    function issue(
-        address to,
-        string calldata assetType,
-        string calldata name,
-        string calldata serial,
-        string calldata imageURI
-    ) external returns (uint256 tokenId) {
-        if (!isPartner[msg.sender]) revert NotPartner();
-        tokenId = _mintAsset(to, assetType, name, serial, imageURI, msg.sender);
     }
 
     // ---------- Redeem: holder requests, issuing partner confirms handover + burns ----------
@@ -231,6 +240,37 @@ contract RWAToken is ERC721 {
         emit RedeemCancelled(redemptionId, r.tokenId);
     }
 
+    // ---------- Land registration: issuer confirms the new owner was registered at the land office ----------
+
+    /// @notice True when the token sits with someone other than the registered owner
+    ///         (not while locked in the vault or parked for redemption).
+    function needsRegistration(uint256 tokenId) public view returns (bool) {
+        address owner = _ownerOf(tokenId);
+        if (owner == address(0) || owner == address(this) || owner == vault) return false;
+        return owner != registeredOwner[tokenId];
+    }
+
+    function confirmRegistration(uint256 tokenId) external {
+        if (msg.sender != _assets[tokenId].issuer) revert NotIssuer();
+        if (!needsRegistration(tokenId)) revert NothingToRegister();
+        address owner = ownerOf(tokenId);
+        registeredOwner[tokenId] = owner;
+        emit RegistrationConfirmed(tokenId, owner, msg.sender);
+    }
+
+    /// @notice Tokens issued by `issuer` that are waiting for land-office registration (demo-scale loop).
+    function pendingRegistrations(address issuer) external view returns (uint256[] memory ids) {
+        uint256 count;
+        for (uint256 i = 1; i < nextTokenId; i++) {
+            if (_assets[i].issuer == issuer && needsRegistration(i)) count++;
+        }
+        ids = new uint256[](count);
+        uint256 j;
+        for (uint256 i = 1; i < nextTokenId; i++) {
+            if (_assets[i].issuer == issuer && needsRegistration(i)) ids[j++] = i;
+        }
+    }
+
     // ---------- Internal ----------
 
     function _mintAsset(
@@ -238,7 +278,7 @@ contract RWAToken is ERC721 {
         string memory assetType,
         string memory name,
         string memory serial,
-        string memory imageURI,
+        string memory details,
         address issuer
     ) internal returns (uint256 tokenId) {
         if (bytes(serial).length == 0 || bytes(name).length == 0 || bytes(assetType).length == 0) revert EmptyField();
@@ -251,10 +291,11 @@ contract RWAToken is ERC721 {
             assetType: assetType,
             name: name,
             serial: serial,
-            imageURI: imageURI,
+            details: details,
             issuer: issuer,
             issuedAt: uint64(block.timestamp)
         });
+        registeredOwner[tokenId] = to;
         _safeMint(to, tokenId);
         emit AssetIssued(tokenId, issuer, to, serial);
     }

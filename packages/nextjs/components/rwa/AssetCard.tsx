@@ -78,7 +78,7 @@ export const AssetCard = ({ tokenId, deals }: { tokenId: bigint; deals: readonly
       await writeRwa({ functionName: "approve", args: [vaultInfo.address, tokenId] });
       await writeVault({
         functionName: "createDeal",
-        args: [rwaInfo.address, tokenId, receiver, BigInt(unlockTime)],
+        args: [tokenId, receiver, BigInt(unlockTime)],
       });
       setMode("idle");
       setReceiver("");
@@ -103,7 +103,6 @@ export const AssetCard = ({ tokenId, deals }: { tokenId: bigint; deals: readonly
       serial={asset?.serial}
       issuerName={issuerName}
       issuedAt={asset?.issuedAt}
-      imageURI={asset?.imageURI}
       issuer={asset && <Address address={asset.issuer} chain={targetNetwork} size="xs" />}
     >
       {history.length > 0 && (
