@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Address } from "@scaffold-ui/components";
 import type { NextPage } from "next";
+import { formatEther } from "viem";
 import { useAccount } from "wagmi";
 import { RegistrationStatus } from "~~/components/rwa/RegistrationStatus";
 import { DEAL_BADGE, DEAL_STATUS, assetIcon, formatCountdown, formatTime, sameAddress } from "~~/components/rwa/utils";
@@ -17,6 +18,9 @@ type Deal = {
   unlockTime: bigint;
   status: number;
   createdAt: bigint;
+  deadline: bigint;
+  price: bigint;
+  paid: boolean;
 };
 
 const DealCard = ({ deal }: { deal: Deal }) => {
@@ -41,12 +45,33 @@ const DealCard = ({ deal }: { deal: Deal }) => {
   const isLocked = deal.status === 1;
   const isSender = sameAddress(deal.from, address);
   const isReceiver = sameAddress(deal.to, address);
+  const isSale = deal.price > 0n;
+  const priceText = `${formatEther(deal.price)} AVAX`;
+  const awaitingPayment = isLocked && isSale && !deal.paid;
+  const deadlinePassed = chainNow > Number(deal.deadline);
+  const canPay = awaitingPayment && isReceiver && !deadlinePassed;
+  const canReclaim = awaitingPayment && isSender && deadlinePassed;
+  const canCancel = isLocked && isSender && secondsLeft > 0 && !deal.paid;
 
   const release = async () => {
     try {
       await writeContractAsync({ functionName: "release", args: [deal.id] });
     } catch (e) {
       console.error("release failed", e);
+    }
+  };
+  const pay = async () => {
+    try {
+      await writeContractAsync({ functionName: "pay", args: [deal.id], value: deal.price });
+    } catch (e) {
+      console.error("pay failed", e);
+    }
+  };
+  const reclaim = async () => {
+    try {
+      await writeContractAsync({ functionName: "reclaim", args: [deal.id] });
+    } catch (e) {
+      console.error("reclaim failed", e);
     }
   };
   const cancel = async () => {
@@ -71,7 +96,16 @@ const DealCard = ({ deal }: { deal: Deal }) => {
               </p>
             )}
           </div>
-          <span className={`badge ${DEAL_BADGE[deal.status] ?? "badge-ghost"}`}>{DEAL_STATUS[deal.status] ?? "?"}</span>
+          <div className="flex flex-col items-end gap-1">
+            <span className={`badge ${DEAL_BADGE[deal.status] ?? "badge-ghost"}`}>
+              {DEAL_STATUS[deal.status] ?? "?"}
+            </span>
+            {isSale && (
+              <span className={`badge badge-sm ${deal.paid ? "badge-success" : "badge-warning badge-outline"}`}>
+                {deal.paid ? "Paid" : "Awaiting payment"}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm items-center">
@@ -87,24 +121,60 @@ const DealCard = ({ deal }: { deal: Deal }) => {
           </span>
           <span className="opacity-60">Unlocks</span>
           <span>{formatTime(deal.unlockTime)}</span>
+          {isSale && (
+            <>
+              <span className="opacity-60">Price</span>
+              <span className="font-semibold">{priceText}</span>
+              <span className="opacity-60">Pay by</span>
+              <span>{formatTime(deal.deadline)}</span>
+            </>
+          )}
         </div>
 
-        {isLocked && (
-          <div className="flex items-center justify-between bg-base-200 rounded-xl px-4 py-3">
-            <span className="text-sm opacity-70">
-              {secondsLeft > 0 ? "Unlocks automatically in" : "Unlocking now…"}
-            </span>
-            <span className="font-display text-2xl">{formatCountdown(secondsLeft)}</span>
-          </div>
-        )}
+        {isLocked &&
+          (awaitingPayment && deadlinePassed ? (
+            <div className="flex items-center justify-between bg-base-200 rounded-xl px-4 py-3">
+              <span className="text-sm opacity-70">
+                Payment deadline passed.{isSender ? " You can take the deed back." : ""}
+              </span>
+            </div>
+          ) : awaitingPayment ? (
+            <div className="flex items-center justify-between gap-3 bg-base-200 rounded-xl px-4 py-3">
+              <span className="text-sm opacity-70">
+                {secondsLeft > 0
+                  ? "Moves once it's paid and the date is reached. Date reached in"
+                  : "The date is reached. Moves as soon as it's paid. Payment closes in"}
+              </span>
+              <span className="font-display text-2xl whitespace-nowrap">
+                {formatCountdown(secondsLeft > 0 ? secondsLeft : Number(deal.deadline) - chainNow)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between bg-base-200 rounded-xl px-4 py-3">
+              <span className="text-sm opacity-70">
+                {secondsLeft > 0 ? "Unlocks automatically in" : "Unlocking now…"}
+              </span>
+              <span className="font-display text-2xl">{formatCountdown(secondsLeft)}</span>
+            </div>
+          ))}
 
         {deal.status === 2 && isReceiver && <RegistrationStatus tokenId={deal.tokenId} />}
 
-        {isLocked && ((isSender && secondsLeft > 0) || canRelease) && (
+        {isLocked && (canCancel || canPay || canReclaim || canRelease) && (
           <div className="card-actions justify-end items-center">
-            {isSender && secondsLeft > 0 && (
+            {canCancel && (
               <button className="btn btn-sm btn-ghost" disabled={isMining} onClick={cancel}>
                 Cancel & take back
+              </button>
+            )}
+            {canReclaim && (
+              <button className="btn btn-sm btn-outline" disabled={isMining} onClick={reclaim}>
+                {isMining ? <span className="loading loading-spinner loading-xs" /> : "Take it back"}
+              </button>
+            )}
+            {canPay && (
+              <button className="btn btn-sm btn-primary" disabled={isMining} onClick={pay}>
+                {isMining ? <span className="loading loading-spinner loading-xs" /> : `Pay ${priceText}`}
               </button>
             )}
             {canRelease && (
@@ -139,8 +209,9 @@ const DealsPage: NextPage = () => {
       <div className="w-full max-w-4xl">
         <h1 className="text-4xl mb-2">My deals</h1>
         <p className="opacity-80">
-          Each asset stays locked until its date, then goes to the receiver on its own. Nobody, the sender included, can
-          sell or pledge it in the meantime.
+          Each asset stays locked until its date, then goes to the receiver on its own. For a sale, it moves once the
+          buyer has paid too, and the AVAX goes to the seller in the same step. Nobody, the sender included, can sell or
+          pledge it in the meantime.
         </p>
       </div>
 

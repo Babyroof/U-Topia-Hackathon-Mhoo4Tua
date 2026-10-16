@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { formatEther } from "viem";
 import { useScaffoldEventHistory, useScaffoldReadContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
 import { getBlockExplorerTxLink } from "~~/utils/scaffold-eth";
 
@@ -7,6 +8,8 @@ export type TimelineKind =
   | "approved"
   | "rejected"
   | "dealCreated"
+  | "paid"
+  | "reclaimed"
   | "released"
   | "cancelled"
   | "registered"
@@ -55,6 +58,8 @@ export const useDeedTimeline = () => {
   const dealCreated = useEvents("ConditionalVault", "DealCreated");
   const released = useEvents("ConditionalVault", "Released");
   const cancelled = useEvents("ConditionalVault", "Cancelled");
+  const paid = useEvents("ConditionalVault", "Paid");
+  const reclaimed = useEvents("ConditionalVault", "Reclaimed");
 
   return useMemo(() => {
     const request = (id?: bigint) => (id === undefined ? undefined : requests?.[Number(id)]);
@@ -102,7 +107,7 @@ export const useDeedTimeline = () => {
       partner: request(a.requestId)?.partner,
     }));
     add(dealCreated, "dealCreated", a => ({
-      text: `Deal created ${short(a.from)} → ${short(a.to)}, unlocks ${new Date(Number(a.unlockTime) * 1000).toLocaleString()}`,
+      text: `${a.price > 0n ? `Sale for ${formatEther(a.price)} AVAX` : "Deal"} created ${short(a.from)} → ${short(a.to)}, unlocks ${new Date(Number(a.unlockTime) * 1000).toLocaleString()}`,
       tokenId: a.tokenId,
       parties: [a.from, a.to],
       partner: issuerOf(a.tokenId),
@@ -111,6 +116,18 @@ export const useDeedTimeline = () => {
       text: `Unlocked: NFT moved to ${short(a.to)}, waiting for land-office registration`,
       tokenId: deal(a.id)?.tokenId,
       parties: [deal(a.id)?.from ?? "", a.to],
+      partner: issuerOf(deal(a.id)?.tokenId),
+    }));
+    add(paid, "paid", a => ({
+      text: `Paid ${formatEther(a.amount)} AVAX`,
+      tokenId: deal(a.id)?.tokenId,
+      parties: [deal(a.id)?.from ?? "", a.payer],
+      partner: issuerOf(deal(a.id)?.tokenId),
+    }));
+    add(reclaimed, "reclaimed", a => ({
+      text: "Sale expired unpaid, NFT returned to the seller",
+      tokenId: deal(a.id)?.tokenId,
+      parties: [deal(a.id)?.from ?? "", deal(a.id)?.to ?? ""],
       partner: issuerOf(deal(a.id)?.tokenId),
     }));
     add(cancelled, "cancelled", a => ({
@@ -167,5 +184,7 @@ export const useDeedTimeline = () => {
     dealCreated,
     released,
     cancelled,
+    paid,
+    reclaimed,
   ]);
 };

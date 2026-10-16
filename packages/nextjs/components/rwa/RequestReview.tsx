@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Address } from "@scaffold-ui/components";
 import { keccak256, toBytes } from "viem";
+import { APPROVAL_CHECKLIST, ApprovalRecord } from "~~/components/rwa/ApprovalRecord";
 import { DeedInfo } from "~~/components/rwa/DeedInfo";
 import { DeedPhotos } from "~~/components/rwa/DeedPhotos";
 import { REQUEST_BADGE, REQUEST_STATUS, assetIcon, formatTime } from "~~/components/rwa/utils";
@@ -12,6 +13,7 @@ import { type PhotoSide, decodeDeed } from "~~/utils/rwa/deed";
 export type TokenizeRequest = {
   id: bigint;
   requester: string;
+  partner: string;
   assetType: string;
   name: string;
   serial: string;
@@ -22,16 +24,10 @@ export type TokenizeRequest = {
   rejectReason: string;
 };
 
-const CHECKLIST = [
-  "The deed matches the land office register",
-  "The requester is the registered owner (ID checked)",
-  "No encumbrance on the deed (mortgage, seizure)",
-];
-
 /** Full review of one request. Mount with key={id} so the reason and checklist never carry over to another request. */
 export const RequestReview = ({ request }: { request: TokenizeRequest }) => {
   const { targetNetwork } = useTargetNetwork();
-  const [checked, setChecked] = useState<boolean[]>(CHECKLIST.map(() => false));
+  const [checked, setChecked] = useState<boolean[]>(APPROVAL_CHECKLIST.map(() => false));
   const [reason, setReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
   const [reasonError, setReasonError] = useState("");
@@ -95,14 +91,19 @@ export const RequestReview = ({ request }: { request: TokenizeRequest }) => {
         <DeedPhotos requestId={request.id} sides={sides} />
 
         {request.status === 2 && (
-          <p className="text-success m-0">Approved. NFT #{request.tokenId.toString()} issued.</p>
+          <ApprovalRecord
+            requestId={request.id}
+            partner={request.partner}
+            tokenId={request.tokenId}
+            details={request.details}
+          />
         )}
         {request.status === 3 && <p className="text-error m-0">Rejected: {request.rejectReason}</p>}
 
         {pending && !serialUsed && (
           <div className="flex flex-col gap-1 bg-base-200 rounded-lg p-3">
             <span className="font-semibold text-sm">Before approving, confirm:</span>
-            {CHECKLIST.map((item, i) => (
+            {APPROVAL_CHECKLIST.map((item, i) => (
               <label key={item} className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"

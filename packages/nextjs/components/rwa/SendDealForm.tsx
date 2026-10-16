@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { AddressInput } from "@scaffold-ui/components";
-import { isAddress } from "viem";
+import { isAddress, parseEther } from "viem";
 import { useAccount } from "wagmi";
-import { Field } from "~~/components/rwa/Field";
+import { Field, InfoTip } from "~~/components/rwa/Field";
 import { formatTime, sameAddress } from "~~/components/rwa/utils";
-import { addressError, hasErrors, unlockTimeError } from "~~/components/rwa/validation";
+import { addressError, hasErrors, priceError, unlockTimeError } from "~~/components/rwa/validation";
 import { useChainNow } from "~~/hooks/rwa/useChainNow";
 import { useDeployedContractInfo, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
@@ -18,6 +18,16 @@ const toLocalInput = (ts: number) => {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+
+/** How long the buyer has to pay, counted from the unlock time (so the deadline is always after it). */
+const PAY_WINDOWS = [
+  { label: "10 minutes (demo)", seconds: 10 * 60 },
+  { label: "1 day", seconds: 24 * 60 * 60 },
+  { label: "7 days", seconds: 7 * 24 * 60 * 60 },
+] as const;
+
+const SALE_INFO =
+  "Turn this into a sale: the buyer pays the price in AVAX to the vault contract. The deed only moves once the buyer has paid and the unlock time is reached, and the AVAX goes to you in the same step. If the buyer doesn't pay by the deadline, you can take the deed back.";
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
@@ -37,6 +47,9 @@ export const SendDealForm = ({
   const [when, setWhen] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [isSale, setIsSale] = useState(false);
+  const [price, setPrice] = useState("");
+  const [payWindow, setPayWindow] = useState<number>(PAY_WINDOWS[0].seconds);
 
   const { data: rwaInfo } = useDeployedContractInfo({ contractName: "RWAToken" });
   const { data: vaultInfo } = useDeployedContractInfo({ contractName: "ConditionalVault" });
@@ -54,7 +67,12 @@ export const SendDealForm = ({
   const { writeContractAsync: writeVault } = useScaffoldWriteContract({ contractName: "ConditionalVault" });
 
   const unlockTime = when ? Math.floor(new Date(when).getTime() / 1000) : undefined;
-  const errors = { receiver: addressError(receiver, address), time: unlockTimeError(unlockTime, chainNow) };
+  const errors = {
+    receiver: addressError(receiver, address),
+    time: unlockTimeError(unlockTime, chainNow),
+    price: isSale ? priceError(price) : undefined,
+  };
+  const deadline = isSale && unlockTime ? unlockTime + payWindow : undefined;
   const vaultAllowed = !!approvedForAll || sameAddress(approved, vaultInfo?.address);
   const busy = step !== 0;
 
@@ -67,7 +85,12 @@ export const SendDealForm = ({
         await writeRwa({ functionName: "approve", args: [vaultInfo.address, tokenId] });
       }
       setStep(2);
-      await writeVault({ functionName: "createDeal", args: [tokenId, receiver, BigInt(unlockTime)] });
+      const saleDeadline = isSale && deadline ? BigInt(deadline) : 0n;
+      const salePrice = isSale ? parseEther(price.trim()) : 0n;
+      await writeVault({
+        functionName: "createDeal",
+        args: [tokenId, receiver, BigInt(unlockTime), saleDeadline, salePrice],
+      });
       onClose();
     } catch (e) {
       console.error("createDeal failed", e);
@@ -105,10 +128,68 @@ export const SendDealForm = ({
         </div>
       </Field>
 
-      {unlockTime && !errors.time && isAddress(receiver) && !errors.receiver && (
+      <label className="label cursor-pointer justify-start gap-3">
+        <input
+          type="checkbox"
+          className="toggle toggle-primary toggle-sm"
+          checked={isSale}
+          onChange={e => setIsSale(e.target.checked)}
+        />
+        <span className="label-text font-semibold">Sell it</span>
+        <InfoTip text={SALE_INFO} />
+      </label>
+
+      {isSale && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Field
+            label="Price (AVAX)"
+            className="grow"
+            info="The exact amount the buyer must pay. It is held by the vault contract and sent to you when the deed moves."
+            error={submitted ? errors.price : undefined}
+          >
+            <input
+              type="text"
+              inputMode="decimal"
+              className="input input-sm input-bordered"
+              placeholder="e.g. 0.5"
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+            />
+          </Field>
+          <Field
+            label="Buyer must pay by"
+            className="grow"
+            info="Counted from the unlock time. If the buyer hasn't paid by then, you can take the deed back."
+          >
+            <select
+              className="select select-sm select-bordered"
+              value={payWindow}
+              onChange={e => setPayWindow(Number(e.target.value))}
+            >
+              {PAY_WINDOWS.map(w => (
+                <option key={w.seconds} value={w.seconds}>
+                  {w.label} after unlock
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+
+      {unlockTime && !errors.time && isAddress(receiver) && !errors.receiver && !errors.price && (
         <p className="text-sm m-0 bg-base-100 rounded p-2">
-          On <b>{formatTime(unlockTime)}</b>, deed no. <b>{serial ?? `#${tokenId}`}</b> moves to wallet{" "}
-          <b>{short(receiver)}</b> automatically.
+          {isSale && deadline ? (
+            <>
+              Once the buyer pays <b>{price.trim()} AVAX</b> (by <b>{formatTime(deadline)}</b>) and{" "}
+              <b>{formatTime(unlockTime)}</b> is reached, deed no. <b>{serial ?? `#${tokenId}`}</b> moves to wallet{" "}
+              <b>{short(receiver)}</b> and the AVAX goes to you.
+            </>
+          ) : (
+            <>
+              On <b>{formatTime(unlockTime)}</b>, deed no. <b>{serial ?? `#${tokenId}`}</b> moves to wallet{" "}
+              <b>{short(receiver)}</b> automatically.
+            </>
+          )}
         </p>
       )}
 

@@ -27,4 +27,12 @@ export const numberError = (value: string, { max, label }: { max?: number; label
   return undefined;
 };
 
+export const priceError = (value: string) => {
+  const v = value.trim();
+  if (!v) return "Enter a price in AVAX";
+  if (!/^\d*\.?\d+$|^\d+\.$/.test(v) || !(Number(v) > 0)) return "The price must be a number above 0, e.g. 0.5";
+  if ((v.split(".")[1] ?? "").length > 18) return "AVAX has at most 18 decimal places";
+  return undefined;
+};
+
 export const hasErrors = (errors: Record<string, string | undefined>) => Object.values(errors).some(Boolean);

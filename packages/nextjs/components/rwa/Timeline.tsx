@@ -7,6 +7,8 @@ const DOT: Record<TimelineKind, string> = {
   approved: "bg-success",
   rejected: "bg-error",
   dealCreated: "bg-warning",
+  paid: "bg-success",
+  reclaimed: "bg-neutral",
   released: "bg-success",
   cancelled: "bg-neutral",
   registered: "bg-primary",

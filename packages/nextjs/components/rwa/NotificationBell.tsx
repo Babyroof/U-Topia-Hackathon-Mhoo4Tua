@@ -20,7 +20,10 @@ const relevant = (e: TimelineEntry, me: string) => {
       return isParty;
     case "dealCreated":
     case "cancelled":
+    case "reclaimed":
       return sameAddress(e.parties[1], me);
+    case "paid":
+      return sameAddress(e.parties[0], me);
     case "released":
       return isParty || isPartner;
     case "requested":

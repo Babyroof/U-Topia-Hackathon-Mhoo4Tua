@@ -17,6 +17,14 @@ const CONTRACT_ERRORS: Record<string, string> = {
   NotSender: "Only the person who created the deal can cancel it.",
   TooEarly: "The unlock time hasn't arrived yet.",
   TooLate: "The unlock time has passed, so it can no longer be cancelled.",
+  BadDeadline: "The payment deadline must be after the unlock time and in the future.",
+  NotSale: "This deal is a free transfer, not a sale.",
+  NotRecipient: "Only the buyer named in this deal can pay for it.",
+  WrongAmount: "The amount sent doesn't match the price. Pay exactly the asking price.",
+  AlreadyPaid: "This sale has already been paid.",
+  NotPaid: "The buyer hasn't paid yet, so the deed can't move.",
+  DeadlineNotPassed: "The payment deadline hasn't passed yet, so you can't take the deed back.",
+  PaymentFailed: "Sending the AVAX to the seller failed. Please try again.",
   ERC721InsufficientApproval: "The vault hasn't been allowed to hold this NFT yet.",
   ERC721IncorrectOwner: "You don't hold this deed's NFT.",
 };
@@ -25,7 +33,7 @@ export const friendlyError = (raw: string) => {
   const name = Object.keys(CONTRACT_ERRORS).find(key => new RegExp(`\\b${key}\\b`).test(raw));
   if (name) return CONTRACT_ERRORS[name];
   if (/user (rejected|denied)|rejected the request/i.test(raw)) return "You cancelled in your wallet.";
-  if (/insufficient funds/i.test(raw)) return "Not enough AVAX in your wallet to pay the network fee.";
+  if (/insufficient funds/i.test(raw)) return "Not enough AVAX in your wallet for this payment and the network fee.";
   if (/wrong network|chain mismatch/i.test(raw)) return "Your wallet is on the wrong network.";
   return "Something went wrong. Please try again.";
 };

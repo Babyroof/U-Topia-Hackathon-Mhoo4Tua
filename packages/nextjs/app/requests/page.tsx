@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
+import { ApprovalRecord } from "~~/components/rwa/ApprovalRecord";
 import { DeedInfo } from "~~/components/rwa/DeedInfo";
 import { DeedPhotos } from "~~/components/rwa/DeedPhotos";
 import { REQUEST_BADGE, REQUEST_STATUS, assetIcon, formatTime, sameAddress } from "~~/components/rwa/utils";
@@ -72,6 +73,9 @@ const MyRequestsPage: NextPage = () => {
                 <div className="collapse-content flex flex-col gap-3">
                   <DeedInfo serial={r.serial} details={details} />
                   <DeedPhotos requestId={r.id} sides={sides} />
+                  {r.status === 2 && (
+                    <ApprovalRecord requestId={r.id} partner={r.partner} tokenId={r.tokenId} details={r.details} />
+                  )}
                 </div>
               </details>
             );
