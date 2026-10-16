@@ -1,5 +1,6 @@
 "use client";
 
+import { BuildingLibraryIcon, CheckBadgeIcon } from "@heroicons/react/24/outline";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 
 /** Whether the on-chain owner matches the owner registered at the land office. */
@@ -12,13 +13,18 @@ export const RegistrationStatus = ({ tokenId }: { tokenId: bigint }) => {
   if (needsRegistration === undefined) return null;
 
   return needsRegistration ? (
-    <div className="notice notice-warning py-2 text-sm">
-      <span>
-        <b>Waiting for land-office registration.</b> Go to the land office to register the transfer so it takes legal
-        effect.
+    <div className="notice notice-info">
+      <span className="notice-icon">
+        <BuildingLibraryIcon className="h-5 w-5" />
+      </span>
+      <span className="text-sm">
+        <b className="block">Waiting for land-office registration</b>
+        Register the transfer at the land office so it takes legal effect.
       </span>
     </div>
   ) : (
-    <span className="badge badge-success badge-outline self-start">Matches the deed</span>
+    <span className="badge badge-success gap-1 self-start">
+      <CheckBadgeIcon className="h-4 w-4" /> Matches the deed
+    </span>
   );
 };

@@ -390,3 +390,33 @@ body {
   color: #b7f0d6;
   border-color: #1f5c45;
 }
+
+/* Calm info notice in the brand blue, with a round icon */
+.notice-info {
+  background: #eef2ff;
+  color: #1e2f6b;
+  border-color: #d5ddfb;
+  align-items: flex-start;
+}
+.notice-icon {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+}
+[data-theme="dark"] .notice-info {
+  background: #1b2547;
+  color: #d9e1ff;
+  border-color: #2c3a6b;
+}
+
+/* Softer warning: warm cream instead of brown */
+.notice-warning {
+  background: #fffaf0;
+  color: #6a4708;
+  border-color: #f6e2b8;
+}
