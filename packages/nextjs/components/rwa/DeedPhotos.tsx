@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWalletAuth } from "~~/hooks/rwa/useWalletAuth";
 import type { PhotoSide } from "~~/utils/rwa/deed";
 
@@ -21,6 +21,11 @@ export const DeedPhotos = ({ requestId, sides }: { requestId: bigint; sides: Pho
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState<string>();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (zoom) dialogRef.current?.showModal();
+  }, [zoom]);
 
   useEffect(() => {
     setUrls({});
@@ -89,17 +94,19 @@ export const DeedPhotos = ({ requestId, sides }: { requestId: bigint; sides: Pho
         </div>
       )}
 
-      {zoom && (
-        <div className="modal modal-open" onClick={() => setZoom(undefined)}>
-          <div className="modal-box max-w-5xl p-2 bg-base-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={zoom} alt="Deed photo, full size" className="w-full h-auto max-h-[85vh] object-contain" />
-          </div>
-          <button className="btn btn-circle btn-sm absolute top-4 right-4" aria-label="Close">
-            ✕
-          </button>
-        </div>
-      )}
+      {/* native <dialog> opens in the browser's top layer, so nothing on the page can cover or clip it */}
+      <dialog
+        ref={dialogRef}
+        className="m-auto bg-transparent p-0 max-w-[95vw] max-h-[95vh] backdrop:bg-black/80"
+        onClose={() => setZoom(undefined)}
+        onClick={() => dialogRef.current?.close()}
+      >
+        {zoom && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={zoom} alt="Deed photo, full size" className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl" />
+        )}
+        <p className="text-center text-white text-sm mt-2 mb-0">Tap anywhere to close</p>
+      </dialog>
     </div>
   );
 };

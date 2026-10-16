@@ -7,6 +7,7 @@ import { hardhat } from "viem/chains";
 import { useAccount } from "wagmi";
 import {
   ArrowsRightLeftIcon,
+  Bars3Icon,
   BugAntIcon,
   BuildingLibraryIcon,
   ClockIcon,
@@ -14,7 +15,6 @@ import {
   HomeIcon,
   QuestionMarkCircleIcon,
   ShieldCheckIcon,
-  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { AutoReleaser } from "~~/components/rwa/AutoReleaser";
 import { NotificationBell } from "~~/components/rwa/NotificationBell";
@@ -144,71 +144,48 @@ const DesktopNav = () => {
   );
 };
 
-/** Mobile: app-style bottom tab bar; partner/admin tools and help live under "More". */
-const MobileTabBar = () => {
+/** Below desktop width: one menu button in the header, grouped the same way as the desktop nav. */
+const CompactMenu = () => {
   const pathname = usePathname();
   const { partnerLinks, adminLinks, debugLinks } = useExtraLinks();
   const { badges, total } = usePartnerBadges();
-  const moreRef = useRef<HTMLDetailsElement>(null);
-  useOutsideClick(moreRef, () => moreRef.current?.removeAttribute("open"));
-  const extra = [...partnerLinks, ...adminLinks, ...debugLinks];
-  const moreActive = extra.some(l => isActive(pathname, l.href));
-
-  const tab = (active: boolean) =>
-    `flex flex-col items-center justify-center gap-0.5 h-14 rounded-full text-[11px] font-medium transition-colors ${
-      active ? "bg-primary text-primary-content px-4" : "opacity-70 px-2"
-    }`;
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  useOutsideClick(menuRef, () => menuRef.current?.removeAttribute("open"));
+  const item = (l: NavLink) => (
+    <li key={l.href}>
+      <Link href={l.href} className={isActive(pathname, l.href) ? "menu-active" : ""}>
+        <l.icon className="h-5 w-5" /> {l.label} <Badge n={badges[l.href]} />
+      </Link>
+    </li>
+  );
 
   return (
-    <nav
-      className="lg:hidden fixed bottom-3 inset-x-3 z-20 bg-base-100 rounded-full shadow-[0_12px_32px_-12px_rgb(28_40_80/0.45)] px-2 py-1.5 flex items-center justify-between"
-      aria-label="Main"
-    >
-      {USER_LINKS.map(l => (
-        <Link key={l.href} href={l.href} className={tab(isActive(pathname, l.href))}>
-          <l.icon className="h-5 w-5" />
-          {l.short ?? l.label}
-        </Link>
-      ))}
-      <details ref={moreRef} className="dropdown dropdown-top dropdown-end">
-        <summary className={`${tab(moreActive)} list-none cursor-pointer relative`}>
-          <Squares2X2Icon className="h-5 w-5" />
-          More
-          {total > 0 && (
-            <span className="absolute top-1 right-1">
-              <Badge n={total} />
-            </span>
-          )}
-        </summary>
-        <ul
-          className="dropdown-content menu bg-base-100 rounded-box z-30 w-64 p-2 mb-3 shadow-lg"
-          onClick={() => moreRef.current?.removeAttribute("open")}
-        >
-          {partnerLinks.length > 0 && <li className="menu-title">Partner desk</li>}
-          {partnerLinks.map(l => (
-            <li key={l.href}>
-              <Link href={l.href}>
-                <l.icon className="h-4 w-4" /> {l.label} <Badge n={badges[l.href]} />
-              </Link>
-            </li>
-          ))}
-          {adminLinks.length > 0 && <li className="menu-title">Admin</li>}
-          {[...adminLinks, ...debugLinks].map(l => (
-            <li key={l.href}>
-              <Link href={l.href}>
-                <l.icon className="h-4 w-4" /> {l.label}
-              </Link>
-            </li>
-          ))}
-          <li className="menu-title">Help</li>
-          <li>
-            <button onClick={openTutorial}>
-              <QuestionMarkCircleIcon className="h-4 w-4" /> How it works
-            </button>
-          </li>
-        </ul>
-      </details>
-    </nav>
+    <details ref={menuRef} className="dropdown lg:hidden">
+      <summary className="btn btn-circle bg-base-100 border-0 shadow-sm list-none relative" aria-label="Menu">
+        <Bars3Icon className="h-5 w-5" />
+        {total > 0 && (
+          <span className="absolute -top-1 -right-1">
+            <Badge n={total} />
+          </span>
+        )}
+      </summary>
+      <ul
+        className="dropdown-content menu menu-lg bg-base-100 rounded-box z-30 w-72 p-2 mt-2 shadow-lg"
+        onClick={() => menuRef.current?.removeAttribute("open")}
+      >
+        {USER_LINKS.map(item)}
+        {partnerLinks.length > 0 && <li className="menu-title">Partner desk</li>}
+        {partnerLinks.map(item)}
+        {adminLinks.length + debugLinks.length > 0 && <li className="menu-title">Admin</li>}
+        {[...adminLinks, ...debugLinks].map(item)}
+        <li className="menu-title">Help</li>
+        <li>
+          <button onClick={openTutorial}>
+            <QuestionMarkCircleIcon className="h-5 w-5" /> How it works
+          </button>
+        </li>
+      </ul>
+    </details>
   );
 };
 
@@ -233,12 +210,15 @@ export const Header = () => {
     <>
       <header className="sticky top-0 z-20 bg-base-200/85 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="seal" style={{ width: "2.25rem", height: "2.25rem", transform: "none" }} aria-hidden>
-              <span style={{ fontSize: "0.75rem" }}>RV</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight hidden sm:inline">RWA Vault</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <CompactMenu />
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <div className="seal" style={{ width: "2.25rem", height: "2.25rem", transform: "none" }} aria-hidden>
+                <span style={{ fontSize: "0.75rem" }}>RV</span>
+              </div>
+              <span className="font-bold text-lg tracking-tight hidden sm:inline">RWA Vault</span>
+            </Link>
+          </div>
           <DesktopNav />
           <div className="flex items-center gap-2">
             <NotificationBell />
@@ -252,7 +232,6 @@ export const Header = () => {
           </div>
         </div>
       </header>
-      <MobileTabBar />
       <AutoReleaser />
       <RequestNotifier />
       <Tutorial />

@@ -22,7 +22,7 @@ export const Field = ({
       {info && <InfoTip text={info} />}
     </span>
     {children}
-    {helper && <span className="text-xs opacity-60">{helper}</span>}
+    {helper && <span className="text-sm opacity-70">{helper}</span>}
     {error && (
       <span className="text-sm text-error" role="alert">
         {error}

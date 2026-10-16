@@ -281,3 +281,71 @@ h2,
 h3 {
   overflow-wrap: anywhere;
 }
+
+/* ---------- Readability ---------- */
+body {
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* secondary text was too faint */
+.opacity-60 {
+  opacity: 0.78;
+}
+.opacity-70 {
+  opacity: 0.85;
+}
+.opacity-75,
+.opacity-80 {
+  opacity: 0.9;
+}
+
+/* status badges and alerts: tinted background, dark readable text */
+[data-theme="light"] .badge-warning,
+:root:not([data-theme="dark"]) .badge-warning {
+  background: #fff1d6;
+  color: #7a4a00;
+  border-color: #f3d39a;
+}
+[data-theme="light"] .badge-success,
+:root:not([data-theme="dark"]) .badge-success {
+  background: #dcf5ea;
+  color: #0b5c40;
+  border-color: #a9e2c8;
+}
+[data-theme="light"] .badge-error,
+:root:not([data-theme="dark"]) .badge-error {
+  background: #fde4e4;
+  color: #9b1c22;
+  border-color: #f4b4b6;
+}
+[data-theme="light"] .badge-error.text-white,
+:root:not([data-theme="dark"]) .badge-error.text-white {
+  background: #d0393f;
+  color: #fff;
+}
+[data-theme="light"] .alert-warning,
+:root:not([data-theme="dark"]) .alert-warning {
+  background: #fff6e5;
+  color: #6b4100;
+  border: 1px solid #f3d39a;
+  border-radius: 1rem;
+}
+[data-theme="light"] .alert-error,
+:root:not([data-theme="dark"]) .alert-error {
+  background: #fdeced;
+  color: #8a1a1f;
+  border: 1px solid #f4b4b6;
+  border-radius: 1rem;
+}
+[data-theme="light"] .alert-success,
+:root:not([data-theme="dark"]) .alert-success {
+  background: #e6f7ef;
+  color: #0b5c40;
+  border: 1px solid #a9e2c8;
+  border-radius: 1rem;
+}
+.badge {
+  font-weight: 600;
+}
