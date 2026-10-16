@@ -15,6 +15,12 @@ import { contractErrorName } from "~~/utils/rwa/errors";
 
 const PARTNER_INFO = "A verification partner is a land office that checks the deed is genuine before an NFT is issued.";
 
+const CONFIRM_ITEMS = [
+  "The deed number, parcel number and survey page match my paper deed exactly",
+  "The sub-district, district, province and area match what is printed on the deed",
+  "The photos show the whole front and back of this deed, sharp and readable",
+];
+
 const EMPTY_FORM = {
   serial: "",
   landNo: "",
@@ -78,6 +84,7 @@ const TokenizePage: NextPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [serialTaken, setSerialTaken] = useState(false);
   const [done, setDone] = useState(false);
+  const [confirmed, setConfirmed] = useState<boolean[]>(CONFIRM_ITEMS.map(() => false));
 
   const set = (field: FormField) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(f => ({ ...f, [field]: e.target.value }));
@@ -128,6 +135,7 @@ const TokenizePage: NextPage = () => {
       : partnerActive === false
         ? "This partner is deactivated"
         : undefined,
+    confirm: confirmed.every(Boolean) ? undefined : "Tick all three checks to confirm your details are correct",
   };
   const show = (field: keyof typeof errors) => (submitted ? errors[field] : undefined);
 
@@ -150,6 +158,7 @@ const TokenizePage: NextPage = () => {
       });
       setForm(EMPTY_FORM);
       setPhotos({});
+      setConfirmed(CONFIRM_ITEMS.map(() => false));
       setSubmitted(false);
       setDone(true);
     } catch (e) {
@@ -218,6 +227,13 @@ const TokenizePage: NextPage = () => {
             </Field>
           </div>
 
+          <div className="notice notice-warning text-sm">
+            <span>
+              <b>Double-check the location.</b> Copy the sub-district, district and province exactly as printed on the
+              deed. The partner rejects requests that don&apos;t match the land office register.
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Sub-district" error={show("tambon")}>
               {input("tambon", "[example]")}
@@ -243,6 +259,13 @@ const TokenizePage: NextPage = () => {
                 {input("wa", "0", "decimal")}
               </Field>
             </div>
+          </div>
+
+          <div className="notice notice-warning text-sm">
+            <span>
+              <b>Double-check the photos.</b> Use the deed you entered above, the whole page in frame, no glare or blur,
+              and the deed number readable.
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -275,6 +298,26 @@ const TokenizePage: NextPage = () => {
               </div>
             )}
           </Field>
+
+          <div className="flex flex-col gap-2 bg-base-200 rounded-2xl p-4">
+            <span className="font-semibold">Before you send, confirm:</span>
+            {CONFIRM_ITEMS.map((item, i) => (
+              <label key={item} className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm checkbox-primary mt-0.5"
+                  checked={confirmed[i]}
+                  onChange={e => setConfirmed(c => c.map((v, j) => (j === i ? e.target.checked : v)))}
+                />
+                <span className="text-sm">{item}</span>
+              </label>
+            ))}
+            {show("confirm") && (
+              <span className="text-sm text-error" role="alert">
+                {show("confirm")}
+              </span>
+            )}
+          </div>
 
           {address ? (
             <button className="btn btn-primary mt-2" disabled={isMining} onClick={handleSubmit}>
