@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useWalletAuth } from "~~/hooks/rwa/useWalletAuth";
 import type { DeedPhoto } from "~~/utils/rwa/deed";
-import { measureImage, qualityWarnings } from "~~/utils/rwa/imageQuality";
 
 const MAX_MB = 5;
 
@@ -27,20 +26,17 @@ export const ImageUpload = ({
   const [preview, setPreview] = useState<string>();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [warnings, setQualityWarnings] = useState<string[]>([]);
 
   // parent cleared the form: drop the preview and the chosen file
   useEffect(() => {
     if (!value) {
       setPreview(undefined);
-      setQualityWarnings([]);
       if (inputRef.current) inputRef.current.value = "";
     }
   }, [value]);
 
   const pick = async (file?: File) => {
     setUploadError("");
-    setQualityWarnings([]);
     onChange(undefined);
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -53,8 +49,6 @@ export const ImageUpload = ({
     }
     setUploading(true);
     try {
-      // quality is only a warning: the photo still uploads
-      setQualityWarnings(await measureImage(file).then(qualityWarnings, () => []));
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", headers: await getAuth(), body });
@@ -88,14 +82,6 @@ export const ImageUpload = ({
       {preview && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt={label} className="w-36 h-24 object-cover rounded border border-base-300" />
-      )}
-      {warnings.length > 0 && !uploadError && (
-        <div className="notice notice-warning text-sm flex-col items-start gap-1">
-          {warnings.map(w => (
-            <span key={w}>⚠ {w}</span>
-          ))}
-          <span className="opacity-80">You can still send it, but the partner may reject an unreadable photo.</span>
-        </div>
       )}
       {(uploadError || error) && <span className="text-sm text-error">{uploadError || error}</span>}
     </div>

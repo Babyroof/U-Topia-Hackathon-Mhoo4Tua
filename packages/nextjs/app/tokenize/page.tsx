@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { NextPage } from "next";
 import { keccak256, toBytes } from "viem";
 import { useAccount } from "wagmi";
+import { AssetIcon } from "~~/components/rwa/AssetIcon";
 import { Field, InfoTip } from "~~/components/rwa/Field";
 import { ImageUpload } from "~~/components/rwa/ImageUpload";
 import { LAND, sameAddress } from "~~/components/rwa/utils";
@@ -211,9 +212,7 @@ const TokenizePage: NextPage = () => {
       <div className="card bg-base-100 border border-base-300 w-full max-w-xl">
         <div className="card-body gap-4">
           <div className="flex items-center gap-3 bg-base-200 rounded-lg px-4 py-3">
-            <span className="text-2xl" aria-hidden>
-              {LAND.icon}
-            </span>
+            <AssetIcon assetType={LAND.value} size="md" />
             <p className="m-0 font-semibold">{LAND.label}</p>
           </div>
 
@@ -243,13 +242,13 @@ const TokenizePage: NextPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Sub-district" error={show("tambon")}>
-              {input("tambon", "[example]")}
+              {input("tambon", "e.g. Chang Phueak")}
             </Field>
             <Field label="District" error={show("amphoe")}>
-              {input("amphoe", "[example]")}
+              {input("amphoe", "e.g. Mueang Chiang Mai")}
             </Field>
             <Field label="Province" error={show("province")}>
-              {input("province", "[example]")}
+              {input("province", "e.g. Chiang Mai")}
             </Field>
           </div>
 

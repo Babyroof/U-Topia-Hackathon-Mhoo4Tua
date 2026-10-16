@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Address } from "@scaffold-ui/components";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
+import { AssetIcon } from "~~/components/rwa/AssetIcon";
 import { RoleGate } from "~~/components/rwa/RoleGate";
-import { assetIcon, formatTime, sameAddress } from "~~/components/rwa/utils";
+import { formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useScaffoldReadContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
 
 const PendingRequests = () => {
@@ -32,7 +33,7 @@ const PendingRequests = () => {
             >
               <div className="min-w-0">
                 <div className="font-semibold truncate">
-                  {assetIcon(r.assetType)} {r.name}
+                  <AssetIcon assetType={r.assetType} /> {r.name}
                 </div>
                 <div className="text-xs opacity-60 flex items-center gap-1 flex-wrap">
                   <Address address={r.requester} chain={targetNetwork} size="xs" onlyEnsOrAddress disableAddressLink />·{" "}

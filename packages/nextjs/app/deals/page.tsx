@@ -5,9 +5,10 @@ import { Address } from "@scaffold-ui/components";
 import type { NextPage } from "next";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
+import { AssetIcon } from "~~/components/rwa/AssetIcon";
 import { DealSteps } from "~~/components/rwa/FlowSteps";
 import { RegistrationStatus } from "~~/components/rwa/RegistrationStatus";
-import { DEAL_BADGE, DEAL_STATUS, assetIcon, formatCountdown, formatTime, sameAddress } from "~~/components/rwa/utils";
+import { DEAL_BADGE, DEAL_STATUS, formatCountdown, formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useChainNow } from "~~/hooks/rwa/useChainNow";
 import { useScaffoldReadContract, useScaffoldWriteContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
 
@@ -89,7 +90,7 @@ const DealCard = ({ deal }: { deal: Deal }) => {
         <div className="flex justify-between items-start gap-2">
           <div>
             <h3 className="text-xl m-0">
-              {assetIcon(asset?.assetType)} {asset?.name ?? `NFT #${deal.tokenId.toString()}`}
+              <AssetIcon assetType={asset?.assetType} /> {asset?.name ?? `NFT #${deal.tokenId.toString()}`}
             </h3>
             {asset && (
               <p className="text-xs opacity-60">

@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Address } from "@scaffold-ui/components";
 import { keccak256, toBytes } from "viem";
 import { APPROVAL_CHECKLIST, ApprovalRecord } from "~~/components/rwa/ApprovalRecord";
+import { AssetIcon } from "~~/components/rwa/AssetIcon";
 import { DeedInfo } from "~~/components/rwa/DeedInfo";
 import { DeedPhotos } from "~~/components/rwa/DeedPhotos";
-import { REQUEST_BADGE, REQUEST_STATUS, assetIcon, formatTime } from "~~/components/rwa/utils";
+import { REQUEST_BADGE, REQUEST_STATUS, formatTime } from "~~/components/rwa/utils";
 import { useScaffoldReadContract, useScaffoldWriteContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
 import { type PhotoSide, decodeDeed } from "~~/utils/rwa/deed";
 
@@ -70,7 +71,7 @@ export const RequestReview = ({ request }: { request: TokenizeRequest }) => {
       <div className="card-body gap-4">
         <div className="flex justify-between items-start gap-3">
           <h2 className="font-bold text-xl m-0">
-            {assetIcon(request.assetType)} {request.name}
+            <AssetIcon assetType={request.assetType} /> {request.name}
           </h2>
           <span className={`badge shrink-0 ${REQUEST_BADGE[request.status] ?? "badge-ghost"}`}>
             {REQUEST_STATUS[request.status]}

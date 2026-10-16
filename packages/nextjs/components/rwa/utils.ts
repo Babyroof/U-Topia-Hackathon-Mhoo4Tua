@@ -2,7 +2,6 @@
 export const ASSET_TYPES = [
   {
     value: "Land Title Deed",
-    icon: "🏞️",
     label: "Land title deed",
     serialLabel: "Deed number",
   },
@@ -10,12 +9,10 @@ export const ASSET_TYPES = [
 
 export const LAND = ASSET_TYPES[0];
 
-const GENERIC_TYPE = { icon: "📄", label: "Document", serialLabel: "Document number" };
+const GENERIC_TYPE = { value: "", label: "Document", serialLabel: "Document number" };
 
 export const typeInfo = (assetType?: string) =>
   ASSET_TYPES.find(t => t.value.toLowerCase() === (assetType ?? "").trim().toLowerCase()) ?? GENERIC_TYPE;
-
-export const assetIcon = (assetType?: string) => typeInfo(assetType).icon;
 
 export const REQUEST_STATUS = ["-", "Pending", "Approved", "Rejected"] as const;
 export const REQUEST_BADGE = ["badge-ghost", "badge-warning", "badge-success", "badge-error"] as const;

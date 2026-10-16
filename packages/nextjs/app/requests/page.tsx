@@ -4,10 +4,11 @@ import Link from "next/link";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { ApprovalRecord } from "~~/components/rwa/ApprovalRecord";
+import { AssetIcon } from "~~/components/rwa/AssetIcon";
 import { DeedInfo } from "~~/components/rwa/DeedInfo";
 import { DeedPhotos } from "~~/components/rwa/DeedPhotos";
 import { RequestSteps } from "~~/components/rwa/FlowSteps";
-import { REQUEST_BADGE, REQUEST_STATUS, assetIcon, formatTime, sameAddress } from "~~/components/rwa/utils";
+import { REQUEST_BADGE, REQUEST_STATUS, formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import { type PhotoSide, decodeDeed } from "~~/utils/rwa/deed";
 
@@ -47,7 +48,7 @@ const MyRequestsPage: NextPage = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-semibold">
-                        {assetIcon(r.assetType)} {r.name}
+                        <AssetIcon assetType={r.assetType} /> {r.name}
                       </div>
                       <div className="text-xs opacity-60">Submitted {formatTime(r.createdAt)}</div>
                     </div>

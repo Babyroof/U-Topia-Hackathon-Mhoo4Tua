@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { assetIcon, formatTime } from "~~/components/rwa/utils";
+import { AssetIcon } from "~~/components/rwa/AssetIcon";
+import { formatTime } from "~~/components/rwa/utils";
 
 const initials = (name?: string) =>
   (name ?? "")
@@ -43,7 +44,7 @@ export const Certificate = ({
 
       <header className="flex items-start gap-3 pr-24">
         <div className="text-3xl leading-none" aria-hidden>
-          {assetIcon(assetType)}
+          <AssetIcon assetType={assetType} size="md" />
         </div>
         <div className="min-w-0">
           <p className="m-0 text-sm opacity-70">{assetType ?? "Asset"}</p>
