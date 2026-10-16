@@ -87,7 +87,7 @@ const Home: NextPage = () => {
           {STEPS.map((s, i) => (
             <li key={s.href}>
               <Link href={s.href} className="group block h-full rounded-lg p-5 bg-base-100 hover:bg-base-300">
-                <span className="font-display text-4xl text-secondary">{i + 1}</span>
+                <span className="font-bold text-4xl text-primary">{i + 1}</span>
                 <h3 className="text-xl mt-2 mb-1 group-hover:underline underline-offset-4">{s.title}</h3>
                 <p className="m-0 text-sm opacity-75">{s.text}</p>
               </Link>

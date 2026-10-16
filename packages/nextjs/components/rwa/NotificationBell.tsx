@@ -63,19 +63,19 @@ export const NotificationBell = () => {
   };
 
   return (
-    <div className="dropdown dropdown-end mr-2">
+    <div className="dropdown dropdown-end">
       <button
         tabIndex={0}
-        className="btn btn-ghost btn-sm btn-circle relative"
+        className="btn btn-circle bg-base-100 border-0 shadow-sm relative"
         aria-label="Notifications"
         onClick={markSeen}
       >
         <BellIcon className="h-5 w-5" />
-        {unseen > 0 && <span className="badge badge-error badge-xs absolute -top-1 -right-1">{unseen}</span>}
+        {unseen > 0 && <span className="badge badge-error badge-sm text-white absolute -top-1 -right-1">{unseen}</span>}
       </button>
       <div
         tabIndex={0}
-        className="dropdown-content z-30 mt-2 w-80 max-h-96 overflow-y-auto bg-base-100 border border-base-300 rounded-box p-4 shadow-lg"
+        className="dropdown-content z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-96 overflow-y-auto bg-base-100 border border-base-300 rounded-box p-4 shadow-lg"
       >
         <p className="font-semibold mb-3 mt-0">Notifications</p>
         <Timeline entries={mine} showDeedLink />

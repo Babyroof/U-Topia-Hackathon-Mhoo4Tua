@@ -145,7 +145,7 @@ const DealCard = ({ deal }: { deal: Deal }) => {
                   ? "Moves once it's paid and the date is reached. Date reached in"
                   : "The date is reached. Moves as soon as it's paid. Payment closes in"}
               </span>
-              <span className="font-display text-2xl whitespace-nowrap">
+              <span className="font-bold text-2xl tabular-nums whitespace-nowrap">
                 {formatCountdown(secondsLeft > 0 ? secondsLeft : Number(deal.deadline) - chainNow)}
               </span>
             </div>
@@ -154,7 +154,7 @@ const DealCard = ({ deal }: { deal: Deal }) => {
               <span className="text-sm opacity-70">
                 {secondsLeft > 0 ? "Unlocks automatically in" : "Unlocking now…"}
               </span>
-              <span className="font-display text-2xl">{formatCountdown(secondsLeft)}</span>
+              <span className="font-bold text-2xl tabular-nums">{formatCountdown(secondsLeft)}</span>
             </div>
           ))}
 

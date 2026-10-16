@@ -1,24 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  ArrowsRightLeftIcon,
+  BuildingLibraryIcon,
+  DocumentCheckIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 
 const SEEN_KEY = "rwa-tutorial-seen";
 export const OPEN_TUTORIAL_EVENT = "rwa:open-tutorial";
 
 const PAGES = [
   {
+    icon: ExclamationTriangleIcon,
     title: "Why this exists",
     text: "A paper deed can be lost or forged, and the same deed can be pledged or sold twice. We make sure everyone sees the same answer to one question: who holds this deed?",
   },
   {
+    icon: DocumentCheckIcon,
     title: "What is a token (NFT)?",
     text: "A digital certificate that can exist only once. One NFT stands for one paper deed. It lives in your wallet, and every move is recorded for everyone to check.",
   },
   {
+    icon: BuildingLibraryIcon,
     title: "Who is the verification partner?",
     text: "A land office that checks the paper deed is genuine, and that you are its owner, before it issues the NFT. Only partners approved by the platform can issue.",
   },
   {
+    icon: ArrowsRightLeftIcon,
     title: "Timed transfers and withdrawing",
     text: "Lock a deed for someone until a date: when the time comes it moves to them automatically, and you can cancel before then. The new owner still registers the transfer at the land office. You can also withdraw a deed from the system: the partner confirms, the NFT is burned and the paper deed is the only record again.",
   },
@@ -57,31 +67,41 @@ export const Tutorial = () => {
   if (!open) return null;
   const last = page === PAGES.length - 1;
 
+  const Icon = PAGES[page].icon;
+
   return (
-    <div className="modal modal-open" role="dialog" aria-modal="true">
-      <div className="modal-box max-w-lg">
-        <p className="text-xs opacity-60 m-0">
-          {page + 1} / {PAGES.length}
-        </p>
-        <h3 className="text-2xl mt-1 mb-3">{PAGES[page].title}</h3>
-        <p className="opacity-80 m-0">{PAGES[page].text}</p>
-        <div className="modal-action justify-between">
-          <button className="btn btn-ghost btn-sm" onClick={close}>
+    <div className="modal modal-open modal-bottom sm:modal-middle" role="dialog" aria-modal="true">
+      <div className="modal-box max-w-lg rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary grid place-items-center mb-4">
+          <Icon className="h-7 w-7" />
+        </div>
+        <h3 className="text-2xl mt-0 mb-3">{PAGES[page].title}</h3>
+        <p className="opacity-80 m-0 leading-relaxed">{PAGES[page].text}</p>
+        <div className="flex gap-1.5 mt-6" aria-label={`Step ${page + 1} of ${PAGES.length}`}>
+          {PAGES.map((p, i) => (
+            <span
+              key={p.title}
+              className={`h-1.5 rounded-full transition-all ${i === page ? "w-6 bg-primary" : "w-1.5 bg-base-300"}`}
+            />
+          ))}
+        </div>
+        <div className="modal-action justify-between mt-6">
+          <button className="btn btn-ghost" onClick={close}>
             Skip
           </button>
           <div className="flex gap-2">
             {page > 0 && (
-              <button className="btn btn-sm" onClick={() => setPage(p => p - 1)}>
+              <button className="btn" onClick={() => setPage(p => p - 1)}>
                 Back
               </button>
             )}
-            <button className="btn btn-primary btn-sm" onClick={last ? close : () => setPage(p => p + 1)}>
+            <button className="btn btn-primary px-6" onClick={last ? close : () => setPage(p => p + 1)}>
               {last ? "Get started" : "Next"}
             </button>
           </div>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={close} />
+      <div className="modal-backdrop bg-black/40" onClick={close} />
     </div>
   );
 };
