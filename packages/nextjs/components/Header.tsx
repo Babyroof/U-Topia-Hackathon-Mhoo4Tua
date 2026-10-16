@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { AutoReleaser } from "~~/components/rwa/AutoReleaser";
 import { NotificationBell } from "~~/components/rwa/NotificationBell";
+import { PhaendinLogo } from "~~/components/rwa/PhaendinLogo";
 import { RequestNotifier } from "~~/components/rwa/RequestNotifier";
 import { Tutorial, openTutorial } from "~~/components/rwa/Tutorial";
 import { sameAddress } from "~~/components/rwa/utils";
