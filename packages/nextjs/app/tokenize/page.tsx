@@ -8,6 +8,7 @@ import { useAccount } from "wagmi";
 import { AssetIcon } from "~~/components/rwa/AssetIcon";
 import { Field, InfoTip } from "~~/components/rwa/Field";
 import { ImageUpload } from "~~/components/rwa/ImageUpload";
+import { TokenizeIntro } from "~~/components/rwa/TokenizeIntro";
 import { LAND, sameAddress } from "~~/components/rwa/utils";
 import { hasErrors, numberError, requiredError } from "~~/components/rwa/validation";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
@@ -79,6 +80,7 @@ const TokenizePage: NextPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [serialTaken, setSerialTaken] = useState(false);
   const [done, setDone] = useState(false);
+  const [started, setStarted] = useState(false);
   const [previews, setPreviews] = useState<{ front?: string; back?: string }>({});
   const summaryRef = useRef<HTMLDialogElement>(null);
 
@@ -184,6 +186,19 @@ const TokenizePage: NextPage = () => {
       inputMode={inputMode}
     />
   );
+
+  if (!started) {
+    return (
+      <div className="flex flex-col items-center grow px-4 py-10">
+        <TokenizeIntro
+          onStart={() => {
+            setStarted(true);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center grow px-4 py-10 gap-6">
