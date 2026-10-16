@@ -23,7 +23,8 @@ export async function POST() {
     const key = process.env.KEEPER_PRIVATE_KEY ?? (chain.id === foundry.id ? ANVIL_TEST_KEY_0 : undefined);
     if (!key) return NextResponse.json({ error: "KEEPER_PRIVATE_KEY is not set" }, { status: 500 });
 
-    const publicClient = createPublicClient({ chain, transport: http() });
+    const rpcUrl = (scaffoldConfig.rpcOverrides as Record<number, string> | undefined)?.[chain.id];
+    const publicClient = createPublicClient({ chain, transport: http(rpcUrl) });
     const [needed, performData] = (await publicClient.readContract({
       address: vault.address,
       abi: vault.abi,
@@ -36,7 +37,7 @@ export async function POST() {
     const walletClient = createWalletClient({
       account: privateKeyToAccount(key as `0x${string}`),
       chain,
-      transport: http(),
+      transport: http(rpcUrl),
     });
     const hash = await walletClient.writeContract({
       address: vault.address,

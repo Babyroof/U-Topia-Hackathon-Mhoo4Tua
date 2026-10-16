@@ -7,8 +7,8 @@ import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
-  title: "RWA Vault",
-  description: "One original, one token. Real-world assets verified by partners, on Avalanche.",
+  title: "Phaendin",
+  description: "Phaendin: one land deed, one token. Verified by partners, on Avalanche.",
 });
 
 const gloock = Gloock({ weight: "400", subsets: ["latin"], variable: "--font-gloock" });

@@ -54,7 +54,7 @@ const VaultPage: NextPage = () => {
     return (
       <div className="flex flex-col items-center grow px-4 py-16">
         <div className="surface w-full max-w-md p-8 text-center flex flex-col gap-3">
-          <h1 className="text-3xl m-0">Welcome to RWA Vault</h1>
+          <h1 className="text-3xl m-0">Welcome to Phaendin</h1>
           <p className="opacity-70 m-0">Connect your wallet (MetaMask or Core) to see your deeds.</p>
         </div>
       </div>

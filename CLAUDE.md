@@ -10,7 +10,7 @@ Framework guidance (Scaffold-ETH 2, hooks, components) lives in `AGENTS.md`. The
 - Submission deadline: **Friday 16 Oct, 14:00 (GMT+7)**: code, pitch deck, write-up, demo website.
 - Team: 3 developers new to Web3 (strong in Web2/React) + 1 UX/business. Explain Web3 concepts briefly when you introduce them.
 
-## What we are building: RWA Vault (working name)
+## What we are building: Phaendin
 Single-original documents / real assets ("whoever holds the original has the right") become **one NFT, 1:1**, issued by a trusted partner. Full spec: `README.md`. Demo scope: **Land Title Deed** only (UI). Roles: admin (deployer) adds partners at `/admin`; partners approve at `/partner`; owners use Tokenize / My Vault / Transfers.
 
 - **Flow 1 Tokenize:** A `requestTokenize(partner, …)` → partner `approveRequest` (or `rejectRequest`) → NFT minted to A. Same serial can never be minted twice.
