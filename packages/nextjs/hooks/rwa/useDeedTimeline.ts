@@ -34,6 +34,8 @@ export type TimelineEntry = {
   parties: string[];
   /** partner (issuer) this event concerns */
   partner?: string;
+  /** conditional-transfer deal this event belongs to */
+  dealId?: bigint;
   /** human name of the deed, e.g. "Deed no. 00000, …" */
   deedName?: string;
   /** paid events: amount in AVAX, formatted */
@@ -120,18 +122,21 @@ export const useDeedTimeline = () => {
       partner: request(a.requestId)?.partner,
     }));
     add(dealCreated, "dealCreated", a => ({
+      dealId: a.id,
       text: `${a.price > 0n ? `Sale for ${formatEther(a.price)} AVAX` : "Deal"} created ${short(a.from)} → ${short(a.to)}, unlocks ${new Date(Number(a.unlockTime) * 1000).toLocaleString()}`,
       tokenId: a.tokenId,
       parties: [a.from, a.to],
       partner: issuerOf(a.tokenId),
     }));
     add(released, "released", a => ({
+      dealId: a.id,
       text: `Unlocked: NFT moved to ${short(a.to)}, waiting for land-office registration`,
       tokenId: deal(a.id)?.tokenId,
       parties: [deal(a.id)?.from ?? "", a.to],
       partner: issuerOf(deal(a.id)?.tokenId),
     }));
     add(paid, "paid", a => ({
+      dealId: a.id,
       text: `Paid ${formatEther(a.amount)} AVAX`,
       amount: formatEther(a.amount),
       tokenId: deal(a.id)?.tokenId,
@@ -139,12 +144,14 @@ export const useDeedTimeline = () => {
       partner: issuerOf(deal(a.id)?.tokenId),
     }));
     add(reclaimed, "reclaimed", a => ({
+      dealId: a.id,
       text: "Sale expired unpaid, NFT returned to the seller",
       tokenId: deal(a.id)?.tokenId,
       parties: [deal(a.id)?.from ?? "", deal(a.id)?.to ?? ""],
       partner: issuerOf(deal(a.id)?.tokenId),
     }));
     add(cancelled, "cancelled", a => ({
+      dealId: a.id,
       text: "Deal cancelled, NFT returned to the sender",
       tokenId: deal(a.id)?.tokenId,
       parties: [deal(a.id)?.from ?? "", deal(a.id)?.to ?? ""],

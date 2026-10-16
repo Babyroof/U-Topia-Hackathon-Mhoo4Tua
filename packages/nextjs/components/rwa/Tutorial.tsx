@@ -7,6 +7,7 @@ import {
   DocumentCheckIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { JourneyDiagram } from "~~/components/rwa/JourneyDiagram";
 
 const SEEN_KEY = "rwa-tutorial-seen";
 export const OPEN_TUTORIAL_EVENT = "rwa:open-tutorial";
@@ -29,14 +30,15 @@ const PAGES = [
   },
   {
     icon: ArrowsRightLeftIcon,
-    title: "Timed transfers and withdrawing",
-    text: "Lock a deed for someone until a date: when the time comes it moves to them automatically, and you can cancel before then. The new owner still registers the transfer at the land office. You can also withdraw a deed from the system: the partner confirms, the NFT is burned and the paper deed is the only record again.",
+    title: "The full journey",
+    text: "Once your deed is in the vault you can simply keep it, or send it with a condition, or sell it. A transfer still has to be registered at the land office. You can also withdraw a deed from the system at any time you hold it.",
+    diagram: true,
   },
 ];
 
 export const openTutorial = () => window.dispatchEvent(new Event(OPEN_TUTORIAL_EVENT));
 
-/** 4-page intro shown on the first visit; reopen any time from the "How it works" menu. */
+/** 4-page intro (the last page shows the branching lifecycle and where you are in it) shown on the first visit; reopen any time from the "How it works" menu. */
 export const Tutorial = () => {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(0);
@@ -70,13 +72,25 @@ export const Tutorial = () => {
   const Icon = PAGES[page].icon;
 
   return (
-    <div className="modal modal-open modal-bottom sm:modal-middle" role="dialog" aria-modal="true">
-      <div className="modal-box max-w-lg rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
+    <div
+      className="modal modal-open modal-bottom sm:modal-middle"
+      role="dialog"
+      aria-modal="true"
+      aria-label="How it works"
+    >
+      <div
+        className={`modal-box ${"diagram" in PAGES[page] ? "max-w-2xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 sm:p-8`}
+      >
         <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary grid place-items-center mb-4">
           <Icon className="h-7 w-7" />
         </div>
-        <h3 className="text-2xl mt-0 mb-3">{PAGES[page].title}</h3>
+        <h2 className="text-2xl mt-0 mb-3">{PAGES[page].title}</h2>
         <p className="opacity-80 m-0 leading-relaxed">{PAGES[page].text}</p>
+        {"diagram" in PAGES[page] && (
+          <div className="mt-5">
+            <JourneyDiagram />
+          </div>
+        )}
         <div className="flex gap-1.5 mt-6" aria-label={`Step ${page + 1} of ${PAGES.length}`}>
           {PAGES.map((p, i) => (
             <span

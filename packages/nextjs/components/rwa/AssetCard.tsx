@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Address } from "@scaffold-ui/components";
 import { Certificate } from "~~/components/rwa/Certificate";
@@ -12,7 +12,7 @@ import { useScaffoldReadContract, useScaffoldWriteContract, useTargetNetwork } f
 export const WITHDRAW_INFO =
   "Withdraw from the system: the partner confirms, the NFT is burned and the paper deed is the only record again. Only the holder can do this, and not while the deed is locked in a deal.";
 
-export const AssetCard = ({ tokenId }: { tokenId: bigint }) => {
+export const AssetCard = ({ tokenId, intent }: { tokenId: bigint; intent?: "send" | "sell" }) => {
   const { targetNetwork } = useTargetNetwork();
   const { data: asset } = useScaffoldReadContract({
     contractName: "RWAToken",
@@ -25,7 +25,12 @@ export const AssetCard = ({ tokenId }: { tokenId: bigint }) => {
     args: [asset?.issuer],
   });
   const { writeContractAsync, isMining } = useScaffoldWriteContract({ contractName: "RWAToken" });
-  const [mode, setMode] = useState<"idle" | "send" | "withdraw">("idle");
+  const [mode, setMode] = useState<"idle" | "send" | "withdraw">(intent ? "send" : "idle");
+
+  // chosen from "What can you do next?": open the transfer form on this deed
+  useEffect(() => {
+    if (intent) setMode("send");
+  }, [intent]);
 
   const withdraw = async () => {
     try {
@@ -61,7 +66,15 @@ export const AssetCard = ({ tokenId }: { tokenId: bigint }) => {
         </div>
       )}
 
-      {mode === "send" && <SendDealForm tokenId={tokenId} serial={asset?.serial} onClose={() => setMode("idle")} />}
+      {mode === "send" && (
+        <SendDealForm
+          key={intent ?? "send"}
+          tokenId={tokenId}
+          serial={asset?.serial}
+          startAsSale={intent === "sell"}
+          onClose={() => setMode("idle")}
+        />
+      )}
 
       {mode === "withdraw" && (
         <div className="flex flex-col gap-2 bg-warning/10 rounded-lg p-3">

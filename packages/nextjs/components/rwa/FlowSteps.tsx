@@ -1,9 +1,11 @@
 "use client";
 
+import { formatTime } from "~~/components/rwa/utils";
+import type { TimelineEntry } from "~~/hooks/rwa/useDeedTimeline";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 
 type StepState = "done" | "current" | "failed" | "todo";
-type Step = { label: string; state: StepState };
+type Step = { label: string; state: StepState; time?: number };
 
 const STEP_CLASS: Record<StepState, string> = {
   done: "step-primary",
@@ -12,20 +14,32 @@ const STEP_CLASS: Record<StepState, string> = {
   todo: "",
 };
 
-/** A small progress tracker: where this item is now, plus one plain sentence on what happens next. */
-const Steps = ({ steps, next }: { steps: Step[]; next: string }) => (
+const SR_STATE: Record<StepState, string> = {
+  done: "completed",
+  current: "current stage",
+  failed: "did not happen",
+  todo: "not yet",
+};
+
+/** A small progress tracker: where this item is now (with times when known), plus what happens next. */
+const Steps = ({ steps, next, title }: { steps: Step[]; next: string; title: string }) => (
   <div className="flex flex-col gap-2 bg-base-200/60 rounded-2xl p-3">
-    <ul className="steps steps-horizontal w-full text-xs">
+    <ol className="steps steps-horizontal w-full text-xs" aria-label={title}>
       {steps.map(s => (
         <li
           key={s.label}
           className={`step ${STEP_CLASS[s.state]} ${s.state === "current" ? "font-semibold" : ""}`}
           data-content={s.state === "done" ? "✓" : s.state === "failed" ? "✕" : undefined}
+          aria-current={s.state === "current" ? "step" : undefined}
         >
-          {s.label}
+          <span className="flex flex-col items-center">
+            <span>{s.label}</span>
+            <span className="sr-only">: {SR_STATE[s.state]}</span>
+            {s.time ? <span className="opacity-70 font-normal">{formatTime(s.time)}</span> : null}
+          </span>
         </li>
       ))}
-    </ul>
+    </ol>
     <p className="text-sm m-0">
       <span className="font-semibold">What&apos;s next: </span>
       {next}
@@ -48,7 +62,7 @@ export const RequestSteps = ({ status }: { status: number }) => {
       : status === 3
         ? "The partner rejected it (see the reason). Fix the issue and submit a new request."
         : "Bring the paper deed and your ID to the partner. They check it, then approve here.";
-  return <Steps steps={labels.map((label, i) => ({ label, state: s[i] }))} next={next} />;
+  return <Steps title="Request progress" steps={labels.map((label, i) => ({ label, state: s[i] }))} next={next} />;
 };
 
 type DealLike = {
@@ -61,17 +75,20 @@ type DealLike = {
 };
 
 /**
- * Conditional transfer: locked → (paid) → unlocked → registered at the land office.
+ * Deal status timeline: Created → Condition met (or Buyer paid) → Unlocked → Transfer registered.
+ * `events` are this deed's on-chain timeline entries, used for the times of each stage.
  * `viewer` decides the wording ("you" as sender or receiver).
  */
 export const DealSteps = ({
   deal,
   now,
   viewer,
+  events = [],
 }: {
-  deal: DealLike;
+  deal: DealLike & { id: bigint; createdAt: bigint };
   now: number;
   viewer: "sender" | "receiver" | "other";
+  events?: TimelineEntry[];
 }) => {
   const { data: needsRegistration } = useScaffoldReadContract({
     contractName: "RWAToken",
@@ -79,10 +96,14 @@ export const DealSteps = ({
     args: [deal.status === 2 ? deal.tokenId : undefined],
   });
   const isSale = deal.price > 0n;
-  const labels = isSale
-    ? ["Locked", "Paid", "Unlocked", "Registered"]
-    : ["Locked", "Waiting for date", "Unlocked", "Registered"];
   const unlockReached = now >= Number(deal.unlockTime);
+
+  const forDeal = (kind: TimelineEntry["kind"]) => events.find(e => e.kind === kind && e.dealId === deal.id);
+  const paidAt = forDeal("paid");
+  const releasedAt = forDeal("released");
+  const registeredAt =
+    releasedAt &&
+    events.find(e => e.kind === "registered" && e.tokenId === deal.tokenId && e.blockNumber >= releasedAt.blockNumber);
 
   let current: number;
   let failedAt: number | undefined;
@@ -116,6 +137,17 @@ export const DealSteps = ({
     next = "Unlocking now. The system releases it automatically within a minute.";
   }
 
-  const s = states(4, current, failedAt);
-  return <Steps steps={labels.map((label, i) => ({ label, state: s[i] }))} next={next} />;
+  const st = states(4, current, failedAt);
+  const conditionTime = isSale ? paidAt?.time : unlockReached ? Number(deal.unlockTime) : undefined;
+  const steps: Step[] = [
+    { label: "Created", state: st[0], time: Number(deal.createdAt) },
+    {
+      label: isSale ? "Buyer paid" : "Condition met",
+      state: st[1],
+      time: st[1] === "done" ? conditionTime : undefined,
+    },
+    { label: "Unlocked", state: st[2], time: releasedAt?.time },
+    { label: "Transfer registered", state: st[3], time: registeredAt?.time },
+  ];
+  return <Steps title="Deal status" steps={steps} next={next} />;
 };

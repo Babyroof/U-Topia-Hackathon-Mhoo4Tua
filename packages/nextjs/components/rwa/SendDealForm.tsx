@@ -36,10 +36,13 @@ export const SendDealForm = ({
   tokenId,
   serial,
   onClose,
+  startAsSale = false,
 }: {
   tokenId: bigint;
   serial?: string;
   onClose: () => void;
+  /** open with "Sell it" already on (from the "Sell it" choice on the vault page) */
+  startAsSale?: boolean;
 }) => {
   const { address } = useAccount();
   const chainNow = useChainNow();
@@ -47,7 +50,7 @@ export const SendDealForm = ({
   const [when, setWhen] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState<0 | 1 | 2>(0);
-  const [isSale, setIsSale] = useState(false);
+  const [isSale, setIsSale] = useState(startAsSale);
   const [price, setPrice] = useState("");
   const [payWindow, setPayWindow] = useState<number>(PAY_WINDOWS[0].seconds);
 

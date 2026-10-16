@@ -10,6 +10,7 @@ import { DealSteps } from "~~/components/rwa/FlowSteps";
 import { RegistrationStatus } from "~~/components/rwa/RegistrationStatus";
 import { DEAL_BADGE, DEAL_STATUS, formatCountdown, formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useChainNow } from "~~/hooks/rwa/useChainNow";
+import { type TimelineEntry, useDeedTimeline } from "~~/hooks/rwa/useDeedTimeline";
 import { useScaffoldReadContract, useScaffoldWriteContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
 
 type Deal = {
@@ -25,7 +26,7 @@ type Deal = {
   paid: boolean;
 };
 
-const DealCard = ({ deal }: { deal: Deal }) => {
+const DealCard = ({ deal, events }: { deal: Deal; events: TimelineEntry[] }) => {
   const { address } = useAccount();
   const { targetNetwork } = useTargetNetwork();
   const chainNow = useChainNow();
@@ -160,7 +161,12 @@ const DealCard = ({ deal }: { deal: Deal }) => {
             </div>
           ))}
 
-        <DealSteps deal={deal} now={chainNow} viewer={isSender ? "sender" : isReceiver ? "receiver" : "other"} />
+        <DealSteps
+          deal={deal}
+          now={chainNow}
+          events={events}
+          viewer={isSender ? "sender" : isReceiver ? "receiver" : "other"}
+        />
         {deal.status === 2 && isReceiver && <RegistrationStatus tokenId={deal.tokenId} />}
 
         {isLocked && (canCancel || canPay || canReclaim || canRelease) && (
@@ -198,6 +204,7 @@ const DealCard = ({ deal }: { deal: Deal }) => {
 const TABS = ["Incoming", "Sent by me"] as const;
 
 const DealsPage: NextPage = () => {
+  const timeline = useDeedTimeline();
   const { address } = useAccount();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Incoming");
   const { data: deals } = useScaffoldReadContract({ contractName: "ConditionalVault", functionName: "getAllDeals" });
@@ -233,7 +240,7 @@ const DealsPage: NextPage = () => {
       ) : (
         <div className="grid gap-4 w-full max-w-4xl md:grid-cols-2">
           {list.map(d => (
-            <DealCard key={d.id.toString()} deal={d} />
+            <DealCard key={d.id.toString()} deal={d} events={timeline.filter(e => e.tokenId === d.tokenId)} />
           ))}
         </div>
       )}
