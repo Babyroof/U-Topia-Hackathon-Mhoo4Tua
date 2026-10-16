@@ -11,9 +11,11 @@
 | 1. ขอแปลงสินทรัพย์ | A | `RWAToken.requestTokenize(partner, assetType, name, serial, imageURI)` |
 | 1. อนุมัติ / ปฏิเสธ | Partner | `RWAToken.approveRequest(id)` / `rejectRequest(id, reason)` |
 | ดูของที่ถือ | ทุกคน | `RWAToken.tokensOf(user)`, `getAsset(id)`, `partnerName(addr)`, `getAllRequests()` |
-| 2. ตั้งเงื่อนไขโอน | A | `RWAToken.approve(vault, id)` แล้ว `ConditionalVault.createDeal(nft, id, B, unlockTime)` |
+| 2. ตั้งเงื่อนไขโอน | A | `RWAToken.approve(vault, id)` แล้ว `ConditionalVault.createDeal(id, B, unlockTime, deadline, price)` (โอนฟรี: `deadline` = 0, `price` = 0) |
+| 2. จ่ายเงิน (โหมดขาย) | B | `ConditionalVault.pay(id)` ส่ง AVAX เท่ากับ `price` พอดี ภายใน `deadline` ถ้าถึงเวลาปลดล็อกแล้ว NFT กับ AVAX จะสลับกันใน tx เดียว |
 | 2. ปล่อยให้ B | ใครก็ได้ | `ConditionalVault.release(id)` (เช็คก่อนด้วย `canRelease(id)`) |
-| 2. ยกเลิก | A | `cancel(id)` ได้ก่อนถึงเวลา |
+| 2. ยกเลิก | A | `cancel(id)` ได้ก่อนถึงเวลา และต้องยังไม่ได้จ่ายเงิน |
+| 2. เอาคืน (ขายแล้วไม่จ่าย) | A | `reclaim(id)` หลัง `deadline` ถ้า B ยังไม่จ่าย |
 | ขอรับของจริง | ผู้ถือ | `RWAToken.requestRedeem(id)` → NFT ถูกพักไว้ใน contract · ยกเลิกได้ด้วย `cancelRedeem(rid)` |
 | ส่งมอบของ + burn | Partner (ผู้ออก) | `RWAToken.confirmRedeem(rid)` |
 | ปล่อยอัตโนมัติ | keeper | `ConditionalVault.checkUpkeep` → `performUpkeep` (เว็บเรียก `/api/keeper` ให้เอง) |

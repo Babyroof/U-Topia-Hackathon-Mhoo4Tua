@@ -52,7 +52,18 @@ contract RWAVaultTest is Test {
     function _lock(uint256 tokenId, uint64 unlockIn) internal returns (uint256 dealId) {
         vm.startPrank(alice);
         rwa.approve(address(vault), tokenId);
-        dealId = vault.createDeal(tokenId, bob, uint64(block.timestamp) + unlockIn);
+        dealId = vault.createDeal(tokenId, bob, uint64(block.timestamp) + unlockIn, 0, 0);
+        vm.stopPrank();
+    }
+
+    function _lockSale(uint256 tokenId, uint64 unlockIn, uint64 deadlineIn, uint256 price)
+        internal
+        returns (uint256 dealId)
+    {
+        vm.startPrank(alice);
+        rwa.approve(address(vault), tokenId);
+        uint64 t = uint64(block.timestamp);
+        dealId = vault.createDeal(tokenId, bob, t + unlockIn, t + deadlineIn, price);
         vm.stopPrank();
     }
 
@@ -271,7 +282,7 @@ contract RWAVaultTest is Test {
         // even with the vault approved, someone else cannot lock (and so cannot move) Alice's deed
         vm.prank(eve);
         vm.expectRevert();
-        vault.createDeal(id, eve, uint64(block.timestamp) + 60);
+        vault.createDeal(id, eve, uint64(block.timestamp) + 60, 0, 0);
         assertEq(rwa.ownerOf(id), alice);
     }
 
@@ -282,7 +293,7 @@ contract RWAVaultTest is Test {
         vm.startPrank(eve);
         fake.approve(address(vault), id);
         vm.expectRevert(); // vault pulls from RWAToken, where eve owns nothing
-        vault.createDeal(id, bob, uint64(block.timestamp) + 60);
+        vault.createDeal(id, bob, uint64(block.timestamp) + 60, 0, 0);
         vm.stopPrank();
         assertEq(address(vault.nft()), address(rwa));
     }
@@ -295,7 +306,7 @@ contract RWAVaultTest is Test {
         vm.expectRevert();
         rwa.transferFrom(alice, eve, id);
         vm.expectRevert();
-        vault.createDeal(id, eve, uint64(block.timestamp) + 60);
+        vault.createDeal(id, eve, uint64(block.timestamp) + 60, 0, 0);
         vm.stopPrank();
     }
 
@@ -329,13 +340,13 @@ contract RWAVaultTest is Test {
         uint64 t = uint64(block.timestamp);
 
         vm.expectRevert(ConditionalVault.BadRecipient.selector);
-        vault.createDeal(id, alice, t + 1);
+        vault.createDeal(id, alice, t + 1, 0, 0);
 
         vm.expectRevert(ConditionalVault.BadRecipient.selector);
-        vault.createDeal(id, address(0), t + 1);
+        vault.createDeal(id, address(0), t + 1, 0, 0);
 
         vm.expectRevert(ConditionalVault.BadTime.selector);
-        vault.createDeal(id, bob, t);
+        vault.createDeal(id, bob, t, 0, 0);
         vm.stopPrank();
     }
 
@@ -366,6 +377,236 @@ contract RWAVaultTest is Test {
         vault.performUpkeep(data);
         (needed,) = vault.checkUpkeep("");
         assertFalse(needed);
+    }
+
+    // ---------------- Sale mode: NFT <-> AVAX swap ----------------
+
+    uint256 constant PRICE = 2 ether; // 2 AVAX in wei
+
+    /// unlockTime can't be in the past at creation, so we warp past it before paying.
+    function testSalePayAfterUnlockSwapsInOneTx() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+        vm.warp(block.timestamp + 1 days);
+        vm.deal(bob, PRICE);
+
+        vm.expectEmit(true, true, false, true, address(vault));
+        emit ConditionalVault.Paid(dealId, bob, PRICE);
+        vm.prank(bob);
+        vault.pay{ value: PRICE }(dealId);
+
+        assertEq(rwa.ownerOf(id), bob);
+        assertEq(alice.balance, PRICE);
+        assertEq(bob.balance, 0);
+        assertEq(address(vault).balance, 0);
+        ConditionalVault.Deal memory d = vault.getDeal(dealId);
+        assertEq(uint256(d.status), uint256(ConditionalVault.Status.Released));
+        assertTrue(d.paid);
+        assertTrue(rwa.needsRegistration(id)); // land office must still register B
+    }
+
+    function testSalePayBeforeUnlockHoldsAvaxUntilRelease() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+        vm.deal(bob, PRICE);
+
+        vm.prank(bob);
+        vault.pay{ value: PRICE }(dealId);
+        assertEq(address(vault).balance, PRICE);
+        assertEq(rwa.ownerOf(id), address(vault));
+        assertEq(alice.balance, 0);
+        assertFalse(vault.canRelease(dealId));
+
+        vm.prank(bob);
+        vm.expectRevert(ConditionalVault.AlreadyPaid.selector);
+        vault.pay{ value: 0 }(dealId);
+
+        vm.warp(block.timestamp + 1 days);
+        assertTrue(vault.canRelease(dealId));
+        vm.prank(eve);
+        vault.release(dealId);
+        assertEq(rwa.ownerOf(id), bob);
+        assertEq(alice.balance, PRICE);
+        assertEq(address(vault).balance, 0);
+        assertTrue(rwa.needsRegistration(id));
+    }
+
+    function testSalePayRejections() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+        vm.deal(bob, 10 ether);
+        vm.deal(eve, 10 ether);
+
+        vm.prank(bob);
+        vm.expectRevert(ConditionalVault.WrongAmount.selector);
+        vault.pay{ value: PRICE - 1 }(dealId);
+
+        vm.prank(bob);
+        vm.expectRevert(ConditionalVault.WrongAmount.selector);
+        vault.pay{ value: PRICE + 1 }(dealId);
+
+        vm.prank(eve);
+        vm.expectRevert(ConditionalVault.NotRecipient.selector);
+        vault.pay{ value: PRICE }(dealId);
+
+        vm.warp(block.timestamp + 3 days + 1);
+        vm.prank(bob);
+        vm.expectRevert(ConditionalVault.TooLate.selector);
+        vault.pay{ value: PRICE }(dealId);
+        assertEq(address(vault).balance, 0);
+    }
+
+    function testPayOnFreeTransferReverts() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lock(id, 1 days);
+        vm.deal(bob, PRICE);
+        vm.prank(bob);
+        vm.expectRevert(ConditionalVault.NotSale.selector);
+        vault.pay{ value: PRICE }(dealId);
+    }
+
+    function testUnpaidSaleIsNeverReleased() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+        vm.warp(block.timestamp + 1 days);
+
+        assertFalse(vault.canRelease(dealId));
+        vm.expectRevert(ConditionalVault.NotPaid.selector);
+        vault.release(dealId);
+    }
+
+    function testKeeperSkipsUnpaidSaleButReleasesPaidOne() public {
+        uint256 idUnpaid = _issueToAlice("00001");
+        uint256 idPaid = _issueToAlice("00002");
+        uint256 idFree = _issueToAlice("00003");
+        uint256 dUnpaid = _lockSale(idUnpaid, 1 days, 3 days, PRICE);
+        uint256 dPaid = _lockSale(idPaid, 1 days, 3 days, PRICE);
+        _lock(idFree, 1 days);
+
+        vm.deal(bob, PRICE);
+        vm.prank(bob);
+        vault.pay{ value: PRICE }(dPaid);
+
+        vm.warp(block.timestamp + 1 days);
+        (bool needed, bytes memory data) = vault.checkUpkeep("");
+        assertTrue(needed);
+        uint256[] memory ids = vault.releasable();
+        assertEq(ids.length, 2);
+        assertEq(ids[0], dPaid);
+
+        // even if a keeper passes the unpaid id explicitly, it is skipped
+        uint256[] memory forced = new uint256[](1);
+        forced[0] = dUnpaid;
+        vault.performUpkeep(abi.encode(forced));
+        assertEq(rwa.ownerOf(idUnpaid), address(vault));
+
+        vm.prank(eve);
+        vault.performUpkeep(data);
+        assertEq(rwa.ownerOf(idPaid), bob);
+        assertEq(rwa.ownerOf(idFree), bob);
+        assertEq(rwa.ownerOf(idUnpaid), address(vault));
+        assertEq(alice.balance, PRICE);
+
+        (needed,) = vault.checkUpkeep("");
+        assertFalse(needed);
+    }
+
+    function testCannotCancelOncePaid() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+        vm.deal(bob, PRICE);
+        vm.prank(bob);
+        vault.pay{ value: PRICE }(dealId);
+
+        vm.prank(alice);
+        vm.expectRevert(ConditionalVault.AlreadyPaid.selector);
+        vault.cancel(dealId);
+    }
+
+    function testUnpaidSaleCanBeCancelledBeforeUnlock() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+        vm.prank(alice);
+        vault.cancel(dealId);
+        assertEq(rwa.ownerOf(id), alice);
+    }
+
+    function testReclaimOnlyAfterDeadlineAndUnpaid() public {
+        uint256 id = _issueToAlice("00001");
+        uint256 dealId = _lockSale(id, 1 days, 3 days, PRICE);
+
+        vm.warp(block.timestamp + 3 days); // exactly at deadline: B can still pay
+        vm.prank(alice);
+        vm.expectRevert(ConditionalVault.DeadlineNotPassed.selector);
+        vault.reclaim(dealId);
+
+        vm.warp(block.timestamp + 1);
+        vm.prank(eve);
+        vm.expectRevert(ConditionalVault.NotSender.selector);
+        vault.reclaim(dealId);
+
+        vm.expectEmit(true, false, false, false, address(vault));
+        emit ConditionalVault.Reclaimed(dealId);
+        vm.prank(alice);
+        vault.reclaim(dealId);
+        assertEq(rwa.ownerOf(id), alice);
+        assertEq(uint256(vault.getDeal(dealId).status), uint256(ConditionalVault.Status.Reclaimed));
+        assertFalse(rwa.needsRegistration(id));
+
+        vm.prank(alice);
+        vm.expectRevert(ConditionalVault.NotLocked.selector);
+        vault.reclaim(dealId);
+    }
+
+    function testCannotReclaimPaidSaleOrFreeTransfer() public {
+        uint256 id1 = _issueToAlice("00001");
+        uint256 id2 = _issueToAlice("00002");
+        uint256 dPaid = _lockSale(id1, 1 days, 3 days, PRICE);
+        uint256 dFree = _lock(id2, 1 days);
+        vm.deal(bob, PRICE);
+        vm.prank(bob);
+        vault.pay{ value: PRICE }(dPaid);
+
+        vm.warp(block.timestamp + 4 days);
+        vm.startPrank(alice);
+        vm.expectRevert(ConditionalVault.AlreadyPaid.selector);
+        vault.reclaim(dPaid);
+        vm.expectRevert(ConditionalVault.NotSale.selector);
+        vault.reclaim(dFree);
+        vm.stopPrank();
+
+        // the paid sale still completes after its deadline
+        vault.release(dPaid);
+        assertEq(rwa.ownerOf(id1), bob);
+        assertEq(alice.balance, PRICE);
+    }
+
+    function testSaleBadDeadlineReverts() public {
+        uint256 id = _issueToAlice("00001");
+        vm.startPrank(alice);
+        rwa.approve(address(vault), id);
+        uint64 t = uint64(block.timestamp);
+
+        vm.expectRevert(ConditionalVault.BadDeadline.selector);
+        vault.createDeal(id, bob, t + 1 days, t + 2 days, 0); // free transfer with a deadline
+
+        vm.expectRevert(ConditionalVault.BadDeadline.selector);
+        vault.createDeal(id, bob, t + 1 days, t + 1 days, PRICE); // deadline == unlockTime
+
+        vm.expectRevert(ConditionalVault.BadDeadline.selector);
+        vault.createDeal(id, bob, t + 1 days, t + 1 hours, PRICE); // deadline < unlockTime
+
+        vm.expectRevert(ConditionalVault.BadDeadline.selector);
+        vault.createDeal(id, bob, t + 1 days, 0, PRICE);
+        vm.stopPrank();
+    }
+
+    function testVaultRejectsPlainAvax() public {
+        vm.deal(eve, 1 ether);
+        vm.prank(eve);
+        (bool ok,) = address(vault).call{ value: 1 ether }("");
+        assertFalse(ok);
+        assertEq(address(vault).balance, 0);
     }
 
     // ---------------- Land registration after transfer ----------------

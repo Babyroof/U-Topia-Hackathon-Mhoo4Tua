@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     YourContract: {
-      address: "0x12975173b87f7595ee45dffb2ab812ece596bf84",
+      address: "0xd04ff4a75edd737a73e92b2f2274cb887d96e110",
       abi: [
         {
           type: "constructor",
@@ -148,10 +148,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1056,
+      deployedOnBlock: 1865,
     },
     RWAToken: {
-      address: "0x82dc47734901ee7d4f4232f398752cb9dd5daccc",
+      address: "0xc6b8fbf96cf7bbe45576417ec2163acecfa88ecc",
       abi: [
         {
           type: "constructor",
@@ -1509,10 +1509,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1056,
+      deployedOnBlock: 1865,
     },
     ConditionalVault: {
-      address: "0x05b4cb126885fb10464fdd12666feb25e2563b76",
+      address: "0x5b3120d0da5fdcba7aef87a9c3c64829c1c0d76b",
       abi: [
         {
           type: "constructor",
@@ -1613,6 +1613,16 @@ const deployedContracts = {
               type: "uint64",
               internalType: "uint64",
             },
+            {
+              name: "deadline",
+              type: "uint64",
+              internalType: "uint64",
+            },
+            {
+              name: "price",
+              type: "uint256",
+              internalType: "uint256",
+            },
           ],
           outputs: [
             {
@@ -1686,6 +1696,21 @@ const deployedContracts = {
                   type: "uint64",
                   internalType: "uint64",
                 },
+                {
+                  name: "deadline",
+                  type: "uint64",
+                  internalType: "uint64",
+                },
+                {
+                  name: "price",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+                {
+                  name: "paid",
+                  type: "bool",
+                  internalType: "bool",
+                },
               ],
             },
           ],
@@ -1747,6 +1772,21 @@ const deployedContracts = {
                   type: "uint64",
                   internalType: "uint64",
                 },
+                {
+                  name: "deadline",
+                  type: "uint64",
+                  internalType: "uint64",
+                },
+                {
+                  name: "price",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+                {
+                  name: "paid",
+                  type: "bool",
+                  internalType: "bool",
+                },
               ],
             },
           ],
@@ -1767,12 +1807,38 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "pay",
+          inputs: [
+            {
+              name: "id",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [],
+          stateMutability: "payable",
+        },
+        {
+          type: "function",
           name: "performUpkeep",
           inputs: [
             {
               name: "performData",
               type: "bytes",
               internalType: "bytes",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "reclaim",
+          inputs: [
+            {
+              name: "id",
+              type: "uint256",
+              internalType: "uint256",
             },
           ],
           outputs: [],
@@ -1857,6 +1923,56 @@ const deployedContracts = {
               indexed: false,
               internalType: "uint64",
             },
+            {
+              name: "price",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+            {
+              name: "deadline",
+              type: "uint64",
+              indexed: false,
+              internalType: "uint64",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "Paid",
+          inputs: [
+            {
+              name: "id",
+              type: "uint256",
+              indexed: true,
+              internalType: "uint256",
+            },
+            {
+              name: "payer",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "amount",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "Reclaimed",
+          inputs: [
+            {
+              name: "id",
+              type: "uint256",
+              indexed: true,
+              internalType: "uint256",
+            },
           ],
           anonymous: false,
         },
@@ -1881,6 +1997,16 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "AlreadyPaid",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "BadDeadline",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "BadRecipient",
           inputs: [],
         },
@@ -1891,12 +2017,37 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "DeadlineNotPassed",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "NotLocked",
           inputs: [],
         },
         {
           type: "error",
+          name: "NotPaid",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "NotRecipient",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "NotSale",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "NotSender",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "PaymentFailed",
           inputs: [],
         },
         {
@@ -1914,9 +2065,14 @@ const deployedContracts = {
           name: "TooLate",
           inputs: [],
         },
+        {
+          type: "error",
+          name: "WrongAmount",
+          inputs: [],
+        },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1056,
+      deployedOnBlock: 1865,
     },
   },
 } as const;

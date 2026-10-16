@@ -35,6 +35,8 @@ The **original issuer** (our partner) issues **one NFT** in place of the paper. 
 2. The NFT is locked in the vault contract. Nobody, including A, can sell or pledge it elsewhere meanwhile.
 3. When the time is reached, the NFT goes straight to B's wallet.
 4. A can cancel before the unlock time and get the NFT back.
+5. **Optional sale:** A sets a price in AVAX and a payment deadline. B pays with `pay`; once the unlock time is reached, the NFT goes to B and the AVAX to A in the same transaction. If B hasn't paid by the deadline, A takes the NFT back with `reclaim`. Price 0 is a free transfer.
+6. After the NFT reaches B, the deed shows "waiting for land-office registration" until the issuing partner confirms the transfer was registered.
 
 **Redeem:** the holder requests the real item back; the NFT is parked in the contract; the issuing partner hands the item over and confirms, which burns the NFT. The holder can cancel before that.
 
@@ -58,13 +60,13 @@ A normal database run by one company would let that company edit ownership. Here
 ```
 User ──► Next.js app ──► Wallet (sign) ──► Avalanche Fuji
                                             ├── RWAToken         (NFT, partners, requests, redeem)
-                                            └── ConditionalVault (lock until time, release, cancel)
+                                            └── ConditionalVault (lock until time, sale/pay, release, cancel, reclaim)
 ```
 
 | Contract | Key functions |
 |---|---|
-| `RWAToken` | `requestTokenize`, `approveRequest`, `rejectRequest`, `issue`, `requestRedeem`, `confirmRedeem`, `cancelRedeem`, `setPartner`, `getAsset`, `tokensOf`, `getAllRequests` |
-| `ConditionalVault` | `createDeal`, `release`, `cancel`, `checkUpkeep`, `performUpkeep`, `getAllDeals`, `canRelease` |
+| `RWAToken` | `requestTokenize`, `approveRequest`, `rejectRequest`, `requestRedeem`, `confirmRedeem`, `cancelRedeem`, `confirmRegistration`, `setPartner`, `getAsset`, `tokensOf`, `getAllRequests` |
+| `ConditionalVault` | `createDeal`, `pay`, `release`, `cancel`, `reclaim`, `checkUpkeep`, `performUpkeep`, `getAllDeals`, `canRelease` |
 
 | Layer | Tech |
 |---|---|
@@ -127,7 +129,7 @@ Without them, local dev stores photos in `packages/nextjs/.uploads/`. Run the we
 
 ## Legal note
 
-The token's legal effect comes from the **issuer accepting it in place of the paper**, not from the blockchain itself. Transfer rules differ by document type (delivery, endorsement, or assignment of claims under Thai CCC s.306). Partners shown in the pitch are **target partners**, not signed deals.
+The token's legal effect comes from the **issuer accepting it in place of the paper**, not from the blockchain itself. Transfer rules differ by document type (delivery, endorsement, or assignment of claims under Thai CCC s.306). Partners shown in the pitch are **target partners**, not signed deals. The on-chain swap transfers the tokenized deed held by the custodian; the legal land transfer is still registered at the Land Office.
 
 ## Repository layout
 
