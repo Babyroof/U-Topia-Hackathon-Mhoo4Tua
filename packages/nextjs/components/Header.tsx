@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { AutoReleaser } from "~~/components/rwa/AutoReleaser";
 import { NotificationBell } from "~~/components/rwa/NotificationBell";
+import { PhaendinLogo } from "~~/components/rwa/PhaendinLogo";
 import { RequestNotifier } from "~~/components/rwa/RequestNotifier";
 import { Tutorial, openTutorial } from "~~/components/rwa/Tutorial";
 import { sameAddress } from "~~/components/rwa/utils";
@@ -213,10 +214,7 @@ export const Header = () => {
           <div className="flex items-center gap-2">
             <CompactMenu />
             <Link href="/" className="flex items-center gap-2 shrink-0">
-              <div className="seal" style={{ width: "2.25rem", height: "2.25rem", transform: "none" }} aria-hidden>
-                <span style={{ fontSize: "0.75rem" }}>RV</span>
-              </div>
-              <span className="font-bold text-lg tracking-tight hidden sm:inline">RWA Vault</span>
+              <PhaendinLogo className="h-6 sm:h-7 w-auto text-base-content" />
             </Link>
           </div>
           <DesktopNav />
