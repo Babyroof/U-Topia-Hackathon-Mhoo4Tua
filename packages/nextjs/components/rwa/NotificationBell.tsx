@@ -4,35 +4,10 @@ import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { BellIcon } from "@heroicons/react/24/outline";
 import { Timeline } from "~~/components/rwa/Timeline";
-import { sameAddress } from "~~/components/rwa/utils";
-import { type TimelineEntry, useDeedTimeline } from "~~/hooks/rwa/useDeedTimeline";
+import { useDeedTimeline } from "~~/hooks/rwa/useDeedTimeline";
+import { notificationFor } from "~~/utils/rwa/notifications";
 
 const storageKey = (address: string) => `rwa-seen-block-${address.toLowerCase()}`;
-
-/** Events that are news for this wallet (as owner, receiver or partner). */
-const relevant = (e: TimelineEntry, me: string) => {
-  const isParty = e.parties.some(p => sameAddress(p, me));
-  const isPartner = sameAddress(e.partner, me);
-  switch (e.kind) {
-    case "approved":
-    case "rejected":
-    case "registered":
-      return isParty;
-    case "dealCreated":
-    case "cancelled":
-    case "reclaimed":
-      return sameAddress(e.parties[1], me);
-    case "paid":
-      return sameAddress(e.parties[0], me);
-    case "released":
-      return isParty || isPartner;
-    case "requested":
-    case "withdrawRequested":
-      return isPartner;
-    default:
-      return false;
-  }
-};
 
 export const NotificationBell = () => {
   const { address } = useAccount();
@@ -49,7 +24,10 @@ export const NotificationBell = () => {
   }, [address]);
 
   if (!address) return null;
-  const mine = timeline.filter(e => relevant(e, address)).slice(0, 20);
+  const mine = timeline
+    .map(e => ({ ...e, text: notificationFor(e, address) ?? "" }))
+    .filter(e => e.text)
+    .slice(0, 20);
   const unseen = mine.filter(e => e.blockNumber > seenBlock).length;
 
   const markSeen = () => {
@@ -78,7 +56,11 @@ export const NotificationBell = () => {
         className="dropdown-content z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-96 overflow-y-auto bg-base-100 border border-base-300 rounded-box p-4 shadow-lg"
       >
         <p className="font-semibold mb-3 mt-0">Notifications</p>
-        <Timeline entries={mine} showDeedLink />
+        {mine.length === 0 ? (
+          <p className="opacity-70 m-0">Nothing new for this wallet.</p>
+        ) : (
+          <Timeline entries={mine} showDeedLink />
+        )}
       </div>
     </div>
   );

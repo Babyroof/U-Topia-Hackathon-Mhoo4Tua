@@ -26,10 +26,18 @@ export type TimelineEntry = {
   txLink: string;
   tokenId?: bigint;
   requestId?: bigint;
-  /** wallets this event concerns (for "my history" and the notification bell) */
+  /**
+   * Wallets this event concerns, in a fixed order per kind:
+   * requested/approved/rejected [requester] · deal kinds [sender, receiver] · paid [seller, buyer]
+   * registered [new owner] · withdraw kinds [holder]
+   */
   parties: string[];
   /** partner (issuer) this event concerns */
   partner?: string;
+  /** human name of the deed, e.g. "Deed no. 00000, …" */
+  deedName?: string;
+  /** paid events: amount in AVAX, formatted */
+  amount?: string;
 };
 
 const short = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "?");
@@ -47,6 +55,10 @@ export const useDeedTimeline = () => {
   const { targetNetwork } = useTargetNetwork();
   const { data: requests } = useScaffoldReadContract({ contractName: "RWAToken", functionName: "getAllRequests" });
   const { data: deals } = useScaffoldReadContract({ contractName: "ConditionalVault", functionName: "getAllDeals" });
+  const { data: redemptions } = useScaffoldReadContract({
+    contractName: "RWAToken",
+    functionName: "getAllRedemptions",
+  });
 
   const requested = useEvents("RWAToken", "TokenizeRequested");
   const approved = useEvents("RWAToken", "RequestApproved");
@@ -64,6 +76,7 @@ export const useDeedTimeline = () => {
   return useMemo(() => {
     const request = (id?: bigint) => (id === undefined ? undefined : requests?.[Number(id)]);
     const deal = (id?: bigint) => (id === undefined ? undefined : deals?.[Number(id)]);
+    const redemption = (id?: bigint) => (id === undefined ? undefined : redemptions?.[Number(id)]);
     const issuerOf = (tokenId?: bigint) => requests?.find(r => r.status === 2 && r.tokenId === tokenId)?.partner;
 
     const entries: TimelineEntry[] = [];
@@ -120,6 +133,7 @@ export const useDeedTimeline = () => {
     }));
     add(paid, "paid", a => ({
       text: `Paid ${formatEther(a.amount)} AVAX`,
+      amount: formatEther(a.amount),
       tokenId: deal(a.id)?.tokenId,
       parties: [deal(a.id)?.from ?? "", a.payer],
       partner: issuerOf(deal(a.id)?.tokenId),
@@ -151,7 +165,7 @@ export const useDeedTimeline = () => {
     add(withdrawCancelled, "withdrawCancelled", a => ({
       text: "Withdrawal cancelled, NFT back with the holder",
       tokenId: a.tokenId,
-      parties: [],
+      parties: [redemption(a.redemptionId)?.holder ?? ""],
       partner: issuerOf(a.tokenId),
     }));
     add(withdrawn, "withdrawn", a => ({
@@ -167,6 +181,10 @@ export const useDeedTimeline = () => {
         const r = request(e.requestId);
         if (r?.status === 2) e.tokenId = r.tokenId;
       }
+      const source =
+        (e.requestId !== undefined ? request(e.requestId) : undefined) ??
+        requests?.find(r => r.status === 2 && r.tokenId === e.tokenId);
+      e.deedName = source?.name ?? (e.tokenId !== undefined ? `Deed NFT #${e.tokenId}` : undefined);
     });
 
     return entries.sort((a, b) => Number(b.blockNumber - a.blockNumber) || b.key.localeCompare(a.key));
@@ -174,6 +192,7 @@ export const useDeedTimeline = () => {
     targetNetwork.id,
     requests,
     deals,
+    redemptions,
     requested,
     approved,
     rejected,
