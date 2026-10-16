@@ -15,12 +15,6 @@ import { contractErrorName } from "~~/utils/rwa/errors";
 
 const PARTNER_INFO = "A verification partner is a land office that checks the deed is genuine before an NFT is issued.";
 
-const CONFIRM_ITEMS = [
-  "The deed number, parcel number and survey page match my paper deed exactly",
-  "The sub-district, district, province and area match what is printed on the deed",
-  "The photos show the whole front and back of this deed, sharp and readable",
-];
-
 const EMPTY_FORM = {
   serial: "",
   landNo: "",
@@ -86,7 +80,6 @@ const TokenizePage: NextPage = () => {
   const [done, setDone] = useState(false);
   const [previews, setPreviews] = useState<{ front?: string; back?: string }>({});
   const summaryRef = useRef<HTMLDialogElement>(null);
-  const [confirmed, setConfirmed] = useState<boolean[]>(CONFIRM_ITEMS.map(() => false));
 
   const set = (field: FormField) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(f => ({ ...f, [field]: e.target.value }));
@@ -137,7 +130,6 @@ const TokenizePage: NextPage = () => {
       : partnerActive === false
         ? "This partner is deactivated"
         : undefined,
-    confirm: confirmed.every(Boolean) ? undefined : "Tick all three checks to confirm your details are correct",
   };
   const show = (field: keyof typeof errors) => (submitted ? errors[field] : undefined);
 
@@ -174,7 +166,6 @@ const TokenizePage: NextPage = () => {
       setForm(EMPTY_FORM);
       setPhotos({});
       setPreviews({});
-      setConfirmed(CONFIRM_ITEMS.map(() => false));
       setSubmitted(false);
       setDone(true);
     } catch (e) {
@@ -321,26 +312,6 @@ const TokenizePage: NextPage = () => {
             )}
           </Field>
 
-          <div className="flex flex-col gap-2 bg-base-200 rounded-2xl p-4">
-            <span className="font-semibold">Before you send, confirm:</span>
-            {CONFIRM_ITEMS.map((item, i) => (
-              <label key={item} className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-sm checkbox-primary mt-0.5"
-                  checked={confirmed[i]}
-                  onChange={e => setConfirmed(c => c.map((v, j) => (j === i ? e.target.checked : v)))}
-                />
-                <span className="text-sm">{item}</span>
-              </label>
-            ))}
-            {show("confirm") && (
-              <span className="text-sm text-error" role="alert">
-                {show("confirm")}
-              </span>
-            )}
-          </div>
-
           {address ? (
             <button className="btn btn-primary mt-2" disabled={isMining} onClick={handleReview}>
               {isMining ? <span className="loading loading-spinner loading-sm" /> : "Review & send"}
@@ -356,7 +327,7 @@ const TokenizePage: NextPage = () => {
 
       <p className="text-sm opacity-70 m-0">Land title deeds only for now. Other document types will follow.</p>
       <dialog ref={summaryRef} className="modal modal-bottom sm:modal-middle">
-        <div className="modal-box max-w-lg rounded-t-3xl sm:rounded-3xl">
+        <div className="modal-box max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl">
           <h3 className="text-2xl mt-0 mb-1">Check your request</h3>
           <p className="opacity-70 mt-0 mb-4 text-sm">
             This is what the partner will see. Once sent it can&apos;t be edited; you would need a new request.
@@ -379,20 +350,23 @@ const TokenizePage: NextPage = () => {
             <dt className="opacity-60">Partner</dt>
             <dd className="m-0">{chosenPartnerName || "Partner"}</dd>
           </dl>
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {(["front", "back"] as const).map(side =>
-              previews[side] ? (
-                <figure key={side} className="m-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previews[side]}
-                    alt={`Deed, ${side}`}
-                    className="w-full h-28 object-cover rounded-xl border border-base-300"
-                  />
-                  <figcaption className="text-xs opacity-70 mt-1 capitalize">{side}</figcaption>
-                </figure>
-              ) : null,
-            )}
+          <div className="mt-4">
+            <p className="text-sm font-semibold m-0 mb-2">Deed photos (swipe to see both)</p>
+            <div className="carousel carousel-center w-full gap-3 rounded-2xl">
+              {(["front", "back"] as const).map(side =>
+                previews[side] ? (
+                  <figure key={side} className="carousel-item m-0 flex-col w-[85%]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previews[side]}
+                      alt={`Deed, ${side}`}
+                      className="w-full h-64 object-contain bg-base-200 rounded-xl"
+                    />
+                    <figcaption className="text-xs opacity-70 mt-1 capitalize">{side}</figcaption>
+                  </figure>
+                ) : null,
+              )}
+            </div>
           </div>
           <div className="modal-action">
             <button className="btn btn-ghost" onClick={() => summaryRef.current?.close()}>
