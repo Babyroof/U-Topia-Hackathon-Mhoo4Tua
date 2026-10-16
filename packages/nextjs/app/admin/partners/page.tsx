@@ -95,7 +95,7 @@ const ManagePartners = () => {
           <Field label="Organisation name" error={submitted ? errors.name : undefined}>
             <input
               className={`input input-bordered w-full ${submitted && errors.name ? "input-error" : ""}`}
-              placeholder="e.g. [Example] Land Office"
+              placeholder="e.g. Chiang Mai Land Office"
               value={newName}
               onChange={e => setNewName(e.target.value)}
             />

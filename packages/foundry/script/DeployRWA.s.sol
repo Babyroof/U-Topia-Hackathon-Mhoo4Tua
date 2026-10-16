@@ -15,12 +15,12 @@ contract DeployRWA is ScaffoldETHDeploy {
         RWAToken rwa = new RWAToken(deployer);
 
         // Demo partner wallet (all chains)
-        rwa.setPartner(0xB774b83EDF56CbEEa3E0d3f0f3EE703d79B52A9f, "[Example] Land Office", true);
+        rwa.setPartner(0xB774b83EDF56CbEEa3E0d3f0f3EE703d79B52A9f, "Land Office", true);
 
         // Local chain only: a ready-made demo partner (Anvil test account #2, public test key).
         // On Fuji, the admin adds real partner wallets from the Admin page.
         if (block.chainid == 31337) {
-            rwa.setPartner(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, "[Example] Land Office (local)", true);
+            rwa.setPartner(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, "Land Office (local)", true);
         }
 
         ConditionalVault vault = new ConditionalVault(address(rwa));

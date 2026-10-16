@@ -57,7 +57,7 @@ const Home: NextPage = () => {
             assetType="Land Title Deed"
             name="Deed no. 00000, [example], [example], [example]"
             serial="00000"
-            issuerName="[Example] Land Office"
+            issuerName="Land Office"
             issuedAt={Math.floor(new Date("2026-10-16T09:00:00+07:00").getTime() / 1000)}
             locked
             stampClassName="stamp-in"
