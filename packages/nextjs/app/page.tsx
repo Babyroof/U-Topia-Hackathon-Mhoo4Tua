@@ -43,7 +43,7 @@ const Home: NextPage = () => {
     <div className="flex flex-col grow">
       <section className="w-full max-w-6xl mx-auto px-5 pt-10 pb-14 grid gap-12 lg:grid-cols-[1.1fr_1fr] items-center">
         <div className="max-w-xl">
-          <h1 className="text-4xl md:text-5xl leading-[1.08] mb-5">One deed. One NFT. Safe to hand over.</h1>
+          <h1 className="text-4xl md:text-5xl leading-[1.08] mb-5">One deed. One digital key. Safe to hand over.</h1>
           <p className="text-base md:text-lg leading-relaxed opacity-80 mb-7">
             Your land deed is verified by the Land Office, kept in its vault, and issued as one NFT to your wallet. Send
             it to anyone. They can confirm it&apos;s real before accepting, and the same deed can&apos;t be transferred
