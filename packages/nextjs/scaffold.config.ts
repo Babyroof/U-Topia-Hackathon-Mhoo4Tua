@@ -18,7 +18,7 @@ const scaffoldConfig = {
   // Local dev uses the Anvil chain. Vercel sets NEXT_PUBLIC_USE_FUJI=true to use Avalanche Fuji.
   targetNetworks: [process.env.NEXT_PUBLIC_USE_FUJI === "true" ? chains.avalancheFuji : chains.foundry],
   // The interval at which your front-end polls the RPC servers for new data (it has no effect if you only target the local network (default is 4000))
-  pollingInterval: 3000,
+  pollingInterval: 8000,
   // This is ours Alchemy's default API key.
   // You can get your own at https://dashboard.alchemyapi.io
   // It's recommended to store it in an env variable:
@@ -27,8 +27,9 @@ const scaffoldConfig = {
   // If you want to use a different RPC for a specific network, you can add it here.
   // The key is the chain ID, and the value is the HTTP RPC URL
   rpcOverrides: {
-    // Example:
-    // [chains.mainnet.id]: "https://mainnet.rpc.buidlguidl.com",
+    // The official Fuji RPC rate-limits browsers (HTTP 429). Use a public mirror instead.
+    [chains.avalancheFuji.id]:
+      process.env.NEXT_PUBLIC_FUJI_RPC_URL || "https://avalanche-fuji-c-chain-rpc.publicnode.com",
   },
   // This is ours WalletConnect's default project ID.
   // You can get your own at https://cloud.walletconnect.com
