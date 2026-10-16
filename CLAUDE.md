@@ -14,18 +14,18 @@ Framework guidance (Scaffold-ETH 2, hooks, components) lives in `AGENTS.md`. The
 Single-original documents / real assets ("whoever holds the original has the right") become **one NFT, 1:1**, issued by a trusted partner. Full spec: `README.md`. Demo scope: **Land Title Deed** only (UI). Roles: admin (deployer) adds partners at `/admin`; partners approve at `/partner`; owners use Tokenize / My Vault / Transfers.
 
 - **Flow 1 Tokenize:** A `requestTokenize(partner, …)` → partner `approveRequest` (or `rejectRequest`) → NFT minted to A. Same serial can never be minted twice.
-- **Flow 2 Transfer with conditions:** A `approve(vault, id)` → `createDeal(nft, id, B, unlockTime)` → NFT locked → anyone calls `release` once time is reached → NFT to B. A can `cancel` before unlock.
+- **Flow 2 Transfer with conditions:** A `approve(vault, id)` → `createDeal(id, B, unlockTime, deadline, price)` → NFT locked → anyone calls `release` once time is reached → NFT to B. A can `cancel` before unlock. **Sale mode** (`price > 0`, AVAX): B calls `pay(id)` (exact price, by `deadline`) and NFT + AVAX swap atomically once unlocked; unpaid after `deadline` → A calls `reclaim(id)`. Price 0 = free transfer (`deadline` 0). After release the deed waits for land-office registration (`RWAToken.confirmRegistration` by the issuer).
 - **Redeem:** holder `requestRedeem(id)` → NFT parked in contract → issuing partner `confirmRedeem(rid)` after handover → burned. Holder can `cancelRedeem(rid)` before that.
 - **Auto-release:** vault `checkUpkeep`/`performUpkeep` (Chainlink Automation interface); `components/rwa/AutoReleaser.tsx` calls `app/api/keeper` (key: `KEEPER_PRIVATE_KEY`, local chain falls back to Anvil test key).
 
 | Contract (`packages/foundry/contracts`) | Purpose |
 |---|---|
 | `RWAToken.sol` | ERC-721, partners, tokenize requests, issue, redeem |
-| `ConditionalVault.sol` | Locks NFTs until an unlock time |
+| `ConditionalVault.sol` | Locks NFTs until an unlock time; optional sale (pay in AVAX, atomic swap) |
 
 Tests: `packages/foundry/test/RWAVault.t.sol`. Deploy: `script/DeployRWA.s.sol` (called from `Deploy.s.sol`; deployer is set as the demo partner).
 
-Out of scope unless the team asks: payments/stablecoins, condition types other than time, upgradeable contracts.
+Out of scope unless the team asks: stablecoins (native AVAX sale mode is in scope), condition types other than time, upgradeable contracts.
 
 ## Team rules
 1. Scope is the two flows above, working end to end. Ask before adding features outside them.

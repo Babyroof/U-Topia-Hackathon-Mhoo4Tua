@@ -10,6 +10,9 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
  *         - While locked, nobody (including A) can sell or pledge the NFT elsewhere: the vault holds it.
  *         - From `unlockTime`, anyone can call `release` and the NFT goes to B.
  *         - A can `cancel` before `unlockTime` and get the NFT back.
+ *         Optional sale mode (`price > 0`): B must `pay` exactly `price` in AVAX (wei) before `deadline`.
+ *         On release the NFT goes to B and the AVAX goes to A in the same tx. Unpaid sales are never
+ *         released; after `deadline` A can `reclaim` the NFT.
  *         Automatic release: `checkUpkeep` / `performUpkeep` follow the Chainlink Automation interface,
  *         so a keeper (Chainlink Automation, or our own bot) can release due deals without anyone clicking.
  */
@@ -18,7 +21,8 @@ contract ConditionalVault is ReentrancyGuard {
         None,
         Locked,
         Released,
-        Cancelled
+        Cancelled,
+        Reclaimed
     }
 
     struct Deal {
@@ -30,16 +34,30 @@ contract ConditionalVault is ReentrancyGuard {
         uint64 unlockTime;
         Status status;
         uint64 createdAt;
+        uint64 deadline; // sale only: last moment B can pay (0 for free transfers)
+        uint256 price; // sale only: price in wei (0 = free transfer)
+        bool paid; // sale only: B has paid, AVAX is held by the vault
     }
 
+    /// @notice The only NFT this vault accepts (RWAToken), so nobody can create look-alike deals with another contract.
+    IERC721 public immutable nft;
     Deal[] private _deals;
     uint256 public constant MAX_BATCH = 20;
 
     event DealCreated(
-        uint256 indexed id, address indexed from, address indexed to, address nft, uint256 tokenId, uint64 unlockTime
+        uint256 indexed id,
+        address indexed from,
+        address indexed to,
+        address nft,
+        uint256 tokenId,
+        uint64 unlockTime,
+        uint256 price,
+        uint64 deadline
     );
     event Released(uint256 indexed id, address indexed to);
     event Cancelled(uint256 indexed id);
+    event Paid(uint256 indexed id, address indexed payer, uint256 amount);
+    event Reclaimed(uint256 indexed id);
 
     error BadRecipient();
     error BadTime();
@@ -47,17 +65,36 @@ contract ConditionalVault is ReentrancyGuard {
     error NotSender();
     error TooEarly();
     error TooLate();
+    error BadDeadline();
+    error NotSale();
+    error NotRecipient();
+    error WrongAmount();
+    error AlreadyPaid();
+    error NotPaid();
+    error DeadlineNotPassed();
+    error PaymentFailed();
 
-    /// @dev A must call `nft.approve(vault, tokenId)` first.
-    function createDeal(address nft, uint256 tokenId, address to, uint64 unlockTime)
+    constructor(address _nft) {
+        nft = IERC721(_nft);
+    }
+
+    /// @notice Lock `tokenId` for `to` until `unlockTime`. `price` in wei (0 = free transfer, then `deadline` must be 0).
+    ///         For a sale, `deadline` (last time B can pay) must be after `unlockTime`.
+    /// @dev A must call `nft.approve(vault, tokenId)` (or `setApprovalForAll`) first. Only the holder can lock.
+    function createDeal(uint256 tokenId, address to, uint64 unlockTime, uint64 deadline, uint256 price)
         external
         nonReentrant
         returns (uint256 id)
     {
         if (to == address(0) || to == msg.sender) revert BadRecipient();
         if (unlockTime <= block.timestamp) revert BadTime();
+        if (price == 0) {
+            if (deadline != 0) revert BadDeadline();
+        } else if (deadline <= unlockTime || deadline <= block.timestamp) {
+            revert BadDeadline();
+        }
 
-        IERC721(nft).transferFrom(msg.sender, address(this), tokenId);
+        nft.transferFrom(msg.sender, address(this), tokenId);
 
         id = _deals.length;
         _deals.push(
@@ -65,21 +102,42 @@ contract ConditionalVault is ReentrancyGuard {
                 id: id,
                 from: msg.sender,
                 to: to,
-                nft: nft,
+                nft: address(nft),
                 tokenId: tokenId,
                 unlockTime: unlockTime,
                 status: Status.Locked,
-                createdAt: uint64(block.timestamp)
+                createdAt: uint64(block.timestamp),
+                deadline: deadline,
+                price: price,
+                paid: false
             })
         );
-        emit DealCreated(id, msg.sender, to, nft, tokenId, unlockTime);
+        emit DealCreated(id, msg.sender, to, address(nft), tokenId, unlockTime, price, deadline);
     }
 
-    /// @notice Anyone can trigger once the time is reached; the NFT always goes to B.
+    /// @notice B pays exactly `price` (wei) for a sale deal, up to `deadline`. If `unlockTime` has passed,
+    ///         the NFT and the AVAX swap in this same tx; otherwise the vault holds the AVAX until release.
+    function pay(uint256 id) external payable nonReentrant {
+        Deal storage d = _deals[id];
+        if (msg.sender != d.to) revert NotRecipient();
+        if (d.status != Status.Locked) revert NotLocked();
+        if (d.price == 0) revert NotSale();
+        if (d.paid) revert AlreadyPaid();
+        if (block.timestamp > d.deadline) revert TooLate();
+        if (msg.value != d.price) revert WrongAmount();
+
+        d.paid = true;
+        emit Paid(id, msg.sender, msg.value);
+
+        if (block.timestamp >= d.unlockTime) _release(id);
+    }
+
+    /// @notice Anyone can trigger once the time is reached (and a sale is paid); the NFT always goes to B.
     function release(uint256 id) external nonReentrant {
         Deal storage d = _deals[id];
         if (d.status != Status.Locked) revert NotLocked();
         if (block.timestamp < d.unlockTime) revert TooEarly();
+        if (d.price > 0 && !d.paid) revert NotPaid();
 
         _release(id);
     }
@@ -115,25 +173,46 @@ contract ConditionalVault is ReentrancyGuard {
 
     function _isDue(uint256 id) internal view returns (bool) {
         Deal storage d = _deals[id];
-        return d.status == Status.Locked && block.timestamp >= d.unlockTime;
+        return d.status == Status.Locked && block.timestamp >= d.unlockTime && (d.price == 0 || d.paid);
     }
 
+    /// @dev Effects first, then NFT to B, then (for a paid sale) AVAX to A.
     function _release(uint256 id) internal {
         Deal storage d = _deals[id];
         d.status = Status.Released;
-        IERC721(d.nft).transferFrom(address(this), d.to, d.tokenId);
+        nft.transferFrom(address(this), d.to, d.tokenId);
         emit Released(id, d.to);
+        if (d.paid) {
+            (bool ok,) = payable(d.from).call{ value: d.price }("");
+            if (!ok) revert PaymentFailed();
+        }
     }
 
+    /// @notice A takes the NFT back before `unlockTime` (not possible once B has paid).
     function cancel(uint256 id) external nonReentrant {
         Deal storage d = _deals[id];
         if (d.status != Status.Locked) revert NotLocked();
         if (msg.sender != d.from) revert NotSender();
+        if (d.paid) revert AlreadyPaid();
         if (block.timestamp >= d.unlockTime) revert TooLate();
 
         d.status = Status.Cancelled;
-        IERC721(d.nft).transferFrom(address(this), d.from, d.tokenId);
+        nft.transferFrom(address(this), d.from, d.tokenId);
         emit Cancelled(id);
+    }
+
+    /// @notice A takes the NFT back from an unpaid sale once `deadline` has passed.
+    function reclaim(uint256 id) external nonReentrant {
+        Deal storage d = _deals[id];
+        if (d.status != Status.Locked) revert NotLocked();
+        if (msg.sender != d.from) revert NotSender();
+        if (d.price == 0) revert NotSale();
+        if (d.paid) revert AlreadyPaid();
+        if (block.timestamp <= d.deadline) revert DeadlineNotPassed();
+
+        d.status = Status.Reclaimed;
+        nft.transferFrom(address(this), d.from, d.tokenId);
+        emit Reclaimed(id);
     }
 
     // ---------- Views ----------
@@ -150,8 +229,8 @@ contract ConditionalVault is ReentrancyGuard {
         return _deals;
     }
 
+    /// @notice True when `release` would succeed now (time reached and, for a sale, paid).
     function canRelease(uint256 id) external view returns (bool) {
-        Deal storage d = _deals[id];
-        return d.status == Status.Locked && block.timestamp >= d.unlockTime;
+        return _isDue(id);
     }
 }

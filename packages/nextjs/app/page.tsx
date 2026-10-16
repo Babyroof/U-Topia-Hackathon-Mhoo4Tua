@@ -33,7 +33,7 @@ const Home: NextPage = () => {
           </p>
           <div className="flex gap-3 flex-wrap">
             {role === "admin" ? (
-              <Link href="/admin" className="btn btn-primary">
+              <Link href="/admin/partners" className="btn btn-primary">
                 Manage partners
               </Link>
             ) : role === "partner" ? (
@@ -42,7 +42,7 @@ const Home: NextPage = () => {
               </Link>
             ) : (
               <Link href="/tokenize" className="btn btn-primary">
-                Tokenize an asset
+                Tokenize a deed
               </Link>
             )}
             <Link href="/vault" className="btn btn-ghost border-base-300">
@@ -55,14 +55,22 @@ const Home: NextPage = () => {
           <Certificate
             tokenId={1}
             assetType="Land Title Deed"
-            name="2 rai plot, Hang Dong, Chiang Mai"
-            serial="12345"
-            issuerName="Siam Custody Bank (demo)"
+            name="Deed no. 00000, Chang Phueak, Mueang Chiang Mai, Chiang Mai"
+            serial="00000"
+            issuerName="Land Office"
             issuedAt={Math.floor(new Date("2026-10-16T09:00:00+07:00").getTime() / 1000)}
             locked
             stampClassName="stamp-in"
           >
-            <p className="text-xs opacity-60 m-0">Sample certificate. Partner name is illustrative.</p>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm m-0">
+              <dt className="opacity-60">Parcel no.</dt>
+              <dd className="m-0">0000</dd>
+              <dt className="opacity-60">Area</dt>
+              <dd className="m-0">2 rai 1 ngan 50 sq. wa</dd>
+              <dt className="opacity-60">Locked for</dt>
+              <dd className="m-0">0x8f3a…91c2 until 1 Nov 2026</dd>
+            </dl>
+            <p className="text-xs opacity-60 m-0">Sample certificate with made-up data.</p>
           </Certificate>
         </div>
       </section>
@@ -87,14 +95,18 @@ const Home: NextPage = () => {
           {STEPS.map((s, i) => (
             <li key={s.href}>
               <Link href={s.href} className="group block h-full rounded-lg p-5 bg-base-100 hover:bg-base-300">
-                <span className="font-display text-4xl text-secondary">{i + 1}</span>
+                <span className="font-bold text-4xl text-primary">{i + 1}</span>
                 <h3 className="text-xl mt-2 mb-1 group-hover:underline underline-offset-4">{s.title}</h3>
                 <p className="m-0 text-sm opacity-75">{s.text}</p>
               </Link>
             </li>
           ))}
         </ol>
-        <p className="text-sm opacity-60 mt-10 max-w-2xl">
+        <p className="text-sm opacity-80 mt-10 max-w-2xl border-l-4 border-warning pl-3">
+          The NFT is a digital mirror of the deed. It does not replace the Department of Lands register: a legal
+          transfer still has to be registered at the land office.
+        </p>
+        <p className="text-sm opacity-60 mt-4 max-w-2xl">
           Partners named in the demo are target partners for a pilot. A token carries legal weight because its issuer
           accepts it in place of the paper, not because it is on a blockchain.
         </p>

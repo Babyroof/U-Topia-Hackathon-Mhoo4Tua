@@ -35,6 +35,8 @@ The **original issuer** (our partner) issues **one NFT** in place of the paper. 
 2. The NFT is locked in the vault contract. Nobody, including A, can sell or pledge it elsewhere meanwhile.
 3. When the time is reached, the NFT goes straight to B's wallet.
 4. A can cancel before the unlock time and get the NFT back.
+5. **Optional sale:** A sets a price in AVAX and a payment deadline. B pays with `pay`; once the unlock time is reached, the NFT goes to B and the AVAX to A in the same transaction. If B hasn't paid by the deadline, A takes the NFT back with `reclaim`. Price 0 is a free transfer.
+6. After the NFT reaches B, the deed shows "waiting for land-office registration" until the issuing partner confirms the transfer was registered.
 
 **Redeem:** the holder requests the real item back; the NFT is parked in the contract; the issuing partner hands the item over and confirms, which burns the NFT. The holder can cancel before that.
 
@@ -58,13 +60,13 @@ A normal database run by one company would let that company edit ownership. Here
 ```
 User ──► Next.js app ──► Wallet (sign) ──► Avalanche Fuji
                                             ├── RWAToken         (NFT, partners, requests, redeem)
-                                            └── ConditionalVault (lock until time, release, cancel)
+                                            └── ConditionalVault (lock until time, sale/pay, release, cancel, reclaim)
 ```
 
 | Contract | Key functions |
 |---|---|
-| `RWAToken` | `requestTokenize`, `approveRequest`, `rejectRequest`, `issue`, `requestRedeem`, `confirmRedeem`, `cancelRedeem`, `setPartner`, `getAsset`, `tokensOf`, `getAllRequests` |
-| `ConditionalVault` | `createDeal`, `release`, `cancel`, `checkUpkeep`, `performUpkeep`, `getAllDeals`, `canRelease` |
+| `RWAToken` | `requestTokenize`, `approveRequest`, `rejectRequest`, `requestRedeem`, `confirmRedeem`, `cancelRedeem`, `confirmRegistration`, `setPartner`, `getAsset`, `tokensOf`, `getAllRequests` |
+| `ConditionalVault` | `createDeal`, `pay`, `release`, `cancel`, `reclaim`, `checkUpkeep`, `performUpkeep`, `getAllDeals`, `canRelease` |
 
 | Layer | Tech |
 |---|---|
@@ -95,9 +97,39 @@ yarn deploy --network avalancheFuji
 
 Then set `targetNetworks: [chains.avalancheFuji]` in `packages/nextjs/scaffold.config.ts`.
 
+### Automatic release (keeper)
+
+Deals unlock on their own: a keeper checks every 30 seconds and releases every deal whose time has come (`checkUpkeep` → `performUpkeep`, the Chainlink Automation interface).
+
+```bash
+yarn keeper   # terminal 4, keep it running during the demo
+```
+
+It uses `KEEPER_PRIVATE_KEY` from `packages/nextjs/.env.local` (a throwaway testnet wallet with a little AVAX); on the local chain it falls back to Anvil's public test account. The web app also asks `/api/keeper` to release due deals while it is open.
+
+### Demo accounts
+
+The app never asks for a private key: every action is signed in your own wallet (MetaMask or Core).
+
+1. Create three accounts in your wallet: **admin** (the deployer), **partner**, **user**. On the local chain, import test accounts printed by `yarn chain` instead.
+2. Fund them with test AVAX from the Fuji faucet.
+3. As admin, open **Manage partners** and add the partner wallet.
+4. Use only fake deed data in demos (deed number `00000`, sub-district `[example]`).
+
+### Deed photos
+
+Photos are uploaded through `/api/upload` and stored in **Pinata private IPFS**. Only the requester and the request's partner can view them (`/api/deed-image`, after a free wallet signature). Set in `packages/nextjs/.env.local` (server-only):
+
+```
+PINATA_JWT=...
+PINATA_GATEWAY=your-gateway.mypinata.cloud
+```
+
+Without them, local dev stores photos in `packages/nextjs/.uploads/`. Run the web tests with `yarn next:test`.
+
 ## Legal note
 
-The token's legal effect comes from the **issuer accepting it in place of the paper**, not from the blockchain itself. Transfer rules differ by document type (delivery, endorsement, or assignment of claims under Thai CCC s.306). Partners shown in the pitch are **target partners**, not signed deals.
+The token's legal effect comes from the **issuer accepting it in place of the paper**, not from the blockchain itself. Transfer rules differ by document type (delivery, endorsement, or assignment of claims under Thai CCC s.306). Partners shown in the pitch are **target partners**, not signed deals. The on-chain swap transfers the tokenized deed held by the custodian; the legal land transfer is still registered at the Land Office.
 
 ## Repository layout
 

@@ -33,12 +33,11 @@ export const ParkedCard = ({ redemptionId, tokenId }: { redemptionId: bigint; to
       serial={asset?.serial}
       issuerName={issuerName}
       issuedAt={asset?.issuedAt}
-      imageURI={asset?.imageURI}
-      stampText="Awaiting handover"
+      stampText="Withdrawal pending"
     >
       <p className="text-sm m-0">
-        Collect the item from <b>{issuerName || "the partner"}</b>. They burn this token once it&apos;s in your hands.
-        Only they can do that.
+        Waiting for <b>{issuerName || "the partner"}</b> to confirm your withdrawal. Once they do, the NFT is burned and
+        the paper deed is the only record again.
       </p>
       <div className="flex justify-end">
         <button className="btn btn-sm btn-ghost" disabled={isMining} onClick={cancel}>
