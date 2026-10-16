@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { NextPage } from "next";
 import { keccak256, toBytes } from "viem";
@@ -84,6 +84,8 @@ const TokenizePage: NextPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [serialTaken, setSerialTaken] = useState(false);
   const [done, setDone] = useState(false);
+  const [previews, setPreviews] = useState<{ front?: string; back?: string }>({});
+  const summaryRef = useRef<HTMLDialogElement>(null);
   const [confirmed, setConfirmed] = useState<boolean[]>(CONFIRM_ITEMS.map(() => false));
 
   const set = (field: FormField) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,9 +141,22 @@ const TokenizePage: NextPage = () => {
   };
   const show = (field: keyof typeof errors) => (submitted ? errors[field] : undefined);
 
-  const handleSubmit = async () => {
+  const { data: chosenPartnerName } = useScaffoldReadContract({
+    contractName: "RWAToken",
+    functionName: "partnerName",
+    args: [partner || undefined],
+  });
+
+  // Step 1: validate, then show the summary pop-up. Step 2 (send) happens from the pop-up.
+  const handleReview = () => {
     setSubmitted(true);
     if (hasErrors(errors) || !address) return;
+    summaryRef.current?.showModal();
+  };
+
+  const handleSubmit = async () => {
+    if (hasErrors(errors) || !address) return;
+    summaryRef.current?.close();
     const details = {
       landNo: form.landNo.trim(),
       surveyPage: form.surveyPage.trim(),
@@ -158,6 +173,7 @@ const TokenizePage: NextPage = () => {
       });
       setForm(EMPTY_FORM);
       setPhotos({});
+      setPreviews({});
       setConfirmed(CONFIRM_ITEMS.map(() => false));
       setSubmitted(false);
       setDone(true);
@@ -272,13 +288,19 @@ const TokenizePage: NextPage = () => {
             <ImageUpload
               label="Deed photo, front"
               value={photos.front}
-              onChange={front => setPhotos(p => ({ ...p, front }))}
+              onChange={(front, url) => {
+                setPhotos(p => ({ ...p, front }));
+                setPreviews(p => ({ ...p, front: url }));
+              }}
               error={show("front")}
             />
             <ImageUpload
               label="Deed photo, back"
               value={photos.back}
-              onChange={back => setPhotos(p => ({ ...p, back }))}
+              onChange={(back, url) => {
+                setPhotos(p => ({ ...p, back }));
+                setPreviews(p => ({ ...p, back: url }));
+              }}
               error={show("back")}
             />
           </div>
@@ -320,8 +342,8 @@ const TokenizePage: NextPage = () => {
           </div>
 
           {address ? (
-            <button className="btn btn-primary mt-2" disabled={isMining} onClick={handleSubmit}>
-              {isMining ? <span className="loading loading-spinner loading-sm" /> : "Request tokenization"}
+            <button className="btn btn-primary mt-2" disabled={isMining} onClick={handleReview}>
+              {isMining ? <span className="loading loading-spinner loading-sm" /> : "Review & send"}
             </button>
           ) : (
             <p className="text-sm text-center opacity-70 m-0">Connect your wallet to send a request.</p>
@@ -333,6 +355,58 @@ const TokenizePage: NextPage = () => {
       </div>
 
       <p className="text-sm opacity-70 m-0">Land title deeds only for now. Other document types will follow.</p>
+      <dialog ref={summaryRef} className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box max-w-lg rounded-t-3xl sm:rounded-3xl">
+          <h3 className="text-2xl mt-0 mb-1">Check your request</h3>
+          <p className="opacity-70 mt-0 mb-4 text-sm">
+            This is what the partner will see. Once sent it can&apos;t be edited; you would need a new request.
+          </p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm m-0">
+            <dt className="opacity-60">Deed number</dt>
+            <dd className="m-0 font-semibold serial">{serial}</dd>
+            <dt className="opacity-60">Parcel number</dt>
+            <dd className="m-0">{form.landNo}</dd>
+            <dt className="opacity-60">Survey page</dt>
+            <dd className="m-0">{form.surveyPage}</dd>
+            <dt className="opacity-60">Location</dt>
+            <dd className="m-0">
+              {form.tambon}, {form.amphoe}, {form.province}
+            </dd>
+            <dt className="opacity-60">Area</dt>
+            <dd className="m-0">
+              {form.rai || 0} rai {form.ngan || 0} ngan {form.wa || 0} sq. wa
+            </dd>
+            <dt className="opacity-60">Partner</dt>
+            <dd className="m-0">{chosenPartnerName || "Partner"}</dd>
+          </dl>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {(["front", "back"] as const).map(side =>
+              previews[side] ? (
+                <figure key={side} className="m-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previews[side]}
+                    alt={`Deed, ${side}`}
+                    className="w-full h-28 object-cover rounded-xl border border-base-300"
+                  />
+                  <figcaption className="text-xs opacity-70 mt-1 capitalize">{side}</figcaption>
+                </figure>
+              ) : null,
+            )}
+          </div>
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => summaryRef.current?.close()}>
+              Edit
+            </button>
+            <button className="btn btn-primary px-6" disabled={isMining} onClick={handleSubmit}>
+              Confirm & send
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button aria-label="Close">close</button>
+        </form>
+      </dialog>
     </div>
   );
 };

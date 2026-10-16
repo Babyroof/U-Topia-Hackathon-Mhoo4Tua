@@ -17,7 +17,8 @@ export const ImageUpload = ({
 }: {
   label: string;
   value?: DeedPhoto;
-  onChange: (photo?: DeedPhoto) => void;
+  /** the uploaded photo, plus a local preview URL for showing it again (e.g. in a summary) */
+  onChange: (photo?: DeedPhoto, previewUrl?: string) => void;
   error?: string;
 }) => {
   const getAuth = useWalletAuth();
@@ -53,8 +54,9 @@ export const ImageUpload = ({
       const res = await fetch("/api/upload", { method: "POST", headers: await getAuth(), body });
       const json = await res.json();
       if (!res.ok) throw new UploadError(json.error ?? "Upload failed, please try again");
-      setPreview(URL.createObjectURL(file));
-      onChange({ ref: json.ref, sha256: json.sha256 });
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+      onChange({ ref: json.ref, sha256: json.sha256 }, url);
     } catch (e) {
       setUploadError(e instanceof UploadError ? e.message : "Upload failed, please try again");
       if (inputRef.current) inputRef.current.value = "";

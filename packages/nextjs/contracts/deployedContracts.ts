@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     YourContract: {
-      address: "0xd04ff4a75edd737a73e92b2f2274cb887d96e110",
+      address: "0x19a1c09fe3399c4daaa2c98b936a8e460fc5eaa4",
       abi: [
         {
           type: "constructor",
@@ -148,10 +148,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1865,
+      deployedOnBlock: 3418,
     },
     RWAToken: {
-      address: "0xc6b8fbf96cf7bbe45576417ec2163acecfa88ecc",
+      address: "0x49b8e3b089d4ebf9f37b1da9b839ec013c2cd8c9",
       abi: [
         {
           type: "constructor",
@@ -1509,10 +1509,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1865,
+      deployedOnBlock: 3418,
     },
     ConditionalVault: {
-      address: "0x5b3120d0da5fdcba7aef87a9c3c64829c1c0d76b",
+      address: "0xf56aa3aceddf88ab12e494d0b96da3c09a5d264e",
       abi: [
         {
           type: "constructor",
@@ -2072,7 +2072,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 1865,
+      deployedOnBlock: 3418,
     },
   },
 } as const;
