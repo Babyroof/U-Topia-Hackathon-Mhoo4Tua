@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { ApprovalRecord } from "~~/components/rwa/ApprovalRecord";
 import { DeedInfo } from "~~/components/rwa/DeedInfo";
 import { DeedPhotos } from "~~/components/rwa/DeedPhotos";
+import { RequestSteps } from "~~/components/rwa/FlowSteps";
 import { REQUEST_BADGE, REQUEST_STATUS, assetIcon, formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import { type PhotoSide, decodeDeed } from "~~/utils/rwa/deed";
@@ -53,6 +54,9 @@ const MyRequestsPage: NextPage = () => {
                     <span className={`badge shrink-0 ${REQUEST_BADGE[r.status] ?? "badge-ghost"}`}>
                       {REQUEST_STATUS[r.status] ?? "?"}
                     </span>
+                  </div>
+                  <div className="mt-3">
+                    <RequestSteps status={r.status} />
                   </div>
                   {r.status === 3 && (
                     <div className="notice notice-error mt-3 py-2 text-sm">

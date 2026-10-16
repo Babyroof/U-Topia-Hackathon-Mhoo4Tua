@@ -7,6 +7,7 @@ import { useAccount } from "wagmi";
 import { ArrowsRightLeftIcon, ClockIcon, DocumentPlusIcon } from "@heroicons/react/24/outline";
 import { useRole } from "~~/components/Header";
 import { AssetCard } from "~~/components/rwa/AssetCard";
+import { GettingStarted } from "~~/components/rwa/GettingStarted";
 import { ParkedCard } from "~~/components/rwa/ParkedCard";
 import { Timeline } from "~~/components/rwa/Timeline";
 import { sameAddress } from "~~/components/rwa/utils";
@@ -91,6 +92,7 @@ const VaultPage: NextPage = () => {
         </section>
 
         <section className="flex flex-col gap-3">
+          <GettingStarted />
           <h2 className="text-xl m-0">Recent activity</h2>
           <div className="surface p-5">
             <Timeline entries={recent} showDeedLink />

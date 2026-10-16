@@ -5,6 +5,7 @@ import { Address } from "@scaffold-ui/components";
 import type { NextPage } from "next";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
+import { DealSteps } from "~~/components/rwa/FlowSteps";
 import { RegistrationStatus } from "~~/components/rwa/RegistrationStatus";
 import { DEAL_BADGE, DEAL_STATUS, assetIcon, formatCountdown, formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useChainNow } from "~~/hooks/rwa/useChainNow";
@@ -158,6 +159,7 @@ const DealCard = ({ deal }: { deal: Deal }) => {
             </div>
           ))}
 
+        <DealSteps deal={deal} now={chainNow} viewer={isSender ? "sender" : isReceiver ? "receiver" : "other"} />
         {deal.status === 2 && isReceiver && <RegistrationStatus tokenId={deal.tokenId} />}
 
         {isLocked && (canCancel || canPay || canReclaim || canRelease) && (
