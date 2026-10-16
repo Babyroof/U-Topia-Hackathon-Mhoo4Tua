@@ -214,9 +214,9 @@ export const Header = () => {
             <CompactMenu />
             <Link href="/" className="flex items-center gap-2 shrink-0">
               <div className="seal" style={{ width: "2.25rem", height: "2.25rem", transform: "none" }} aria-hidden>
-                <span style={{ fontSize: "0.75rem" }}>RV</span>
+                <span style={{ fontSize: "0.85rem" }}>P</span>
               </div>
-              <span className="font-bold text-lg tracking-tight hidden sm:inline">RWA Vault</span>
+              <span className="font-bold text-lg tracking-tight hidden sm:inline">Phaendin</span>
             </Link>
           </div>
           <DesktopNav />

@@ -6,7 +6,7 @@ import { type Address, getAddress, isAddress, verifyMessage } from "viem";
  */
 export const SIGNATURE_TTL_SECONDS = 10 * 60;
 
-const HEADER = "RWA Vault: confirm you control this wallet to use deed photos (free, not a transaction)";
+const HEADER = "Phaendin: confirm you control this wallet to use deed photos (free, not a transaction)";
 
 export const buildViewerMessage = (address: string, issuedAt: number) =>
   `${HEADER}\nwallet: ${getAddress(address)}\ntime: ${issuedAt}`;

@@ -1,4 +1,4 @@
-# RWA Vault _(working name)_
+# Phaendin (แผ่นดิน)
 
 > One original, one token. Turn single-original documents and real assets into one NFT that can't be lost, faked, or pledged twice.
 

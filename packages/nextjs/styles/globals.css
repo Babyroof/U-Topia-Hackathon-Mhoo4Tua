@@ -139,7 +139,7 @@
   opacity: 80%;
 }
 
-/* ---------- RWA Vault: fonts + certificate look ---------- */
+/* ---------- Phaendin: fonts + certificate look ---------- */
 @theme {
   --font-display: var(--font-gloock), Georgia, serif;
   --font-sans: var(--font-manrope), system-ui, sans-serif;
