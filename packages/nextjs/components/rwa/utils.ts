@@ -20,7 +20,7 @@ export const assetIcon = (assetType?: string) => typeInfo(assetType).icon;
 export const REQUEST_STATUS = ["-", "Pending", "Approved", "Rejected"] as const;
 export const REQUEST_BADGE = ["badge-ghost", "badge-warning", "badge-success", "badge-error"] as const;
 
-export const DEAL_STATUS = ["-", "Locked", "Released", "Cancelled"] as const;
+export const DEAL_STATUS = ["-", "Locked", "Unlocked", "Cancelled"] as const;
 export const DEAL_BADGE = ["badge-ghost", "badge-warning", "badge-success", "badge-neutral"] as const;
 
 export const sameAddress = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();

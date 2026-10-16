@@ -42,7 +42,7 @@ const Home: NextPage = () => {
               </Link>
             ) : (
               <Link href="/tokenize" className="btn btn-primary">
-                Tokenize an asset
+                Tokenize a deed
               </Link>
             )}
             <Link href="/vault" className="btn btn-ghost border-base-300">
@@ -55,9 +55,9 @@ const Home: NextPage = () => {
           <Certificate
             tokenId={1}
             assetType="Land Title Deed"
-            name="2 rai plot, Hang Dong, Chiang Mai"
-            serial="12345"
-            issuerName="Siam Custody Bank (demo)"
+            name="Deed no. 00000, [example], [example], [example]"
+            serial="00000"
+            issuerName="[Example] Land Office"
             issuedAt={Math.floor(new Date("2026-10-16T09:00:00+07:00").getTime() / 1000)}
             locked
             stampClassName="stamp-in"
@@ -94,7 +94,11 @@ const Home: NextPage = () => {
             </li>
           ))}
         </ol>
-        <p className="text-sm opacity-60 mt-10 max-w-2xl">
+        <p className="text-sm opacity-80 mt-10 max-w-2xl border-l-4 border-warning pl-3">
+          The NFT is a digital mirror of the deed. It does not replace the Department of Lands register: a legal
+          transfer still has to be registered at the land office.
+        </p>
+        <p className="text-sm opacity-60 mt-4 max-w-2xl">
           Partners named in the demo are target partners for a pilot. A token carries legal weight because its issuer
           accepts it in place of the paper, not because it is on a blockchain.
         </p>

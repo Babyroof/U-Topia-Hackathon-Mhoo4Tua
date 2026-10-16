@@ -7,7 +7,9 @@ import { hardhat } from "viem/chains";
 import { useAccount } from "wagmi";
 import { Bars3Icon, BugAntIcon } from "@heroicons/react/24/outline";
 import { AutoReleaser } from "~~/components/rwa/AutoReleaser";
+import { NotificationBell } from "~~/components/rwa/NotificationBell";
 import { RequestNotifier } from "~~/components/rwa/RequestNotifier";
+import { Tutorial, openTutorial } from "~~/components/rwa/Tutorial";
 import { sameAddress } from "~~/components/rwa/utils";
 import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 import { useOutsideClick, useScaffoldReadContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
@@ -22,11 +24,13 @@ const USER_LINKS: HeaderMenuLink[] = [
   { label: "My Vault", href: "/vault" },
   { label: "My requests", href: "/requests" },
   { label: "My deals", href: "/deals" },
+  { label: "History", href: "/history" },
 ];
 
 const PARTNER_LINKS: HeaderMenuLink[] = [
-  { label: "Partner desk", href: "/partner" },
+  { label: "Dashboard", href: "/partner" },
   { label: "Pending requests", href: "/partner/requests" },
+  { label: "Waiting for registration", href: "/partner/registrations" },
 ];
 
 const ADMIN_LINKS: HeaderMenuLink[] = [{ label: "Manage partners", href: "/admin/partners" }];
@@ -61,6 +65,15 @@ export const HeaderMenuLinks = () => {
   const { isPartner, isAdmin } = useRole();
   const { data: requests } = useScaffoldReadContract({ contractName: "RWAToken", functionName: "getAllRequests" });
   const pendingForMe = (requests ?? []).filter(r => r.status === 1 && sameAddress(r.partner, address)).length;
+  const { data: registrations } = useScaffoldReadContract({
+    contractName: "RWAToken",
+    functionName: "pendingRegistrations",
+    args: [address],
+  });
+  const badge: Record<string, number> = {
+    "/partner/requests": pendingForMe,
+    "/partner/registrations": registrations?.length ?? 0,
+  };
   const { targetNetwork } = useTargetNetwork();
   const links = [
     ...USER_LINKS,
@@ -84,13 +97,19 @@ export const HeaderMenuLinks = () => {
             >
               {icon}
               <span>{label}</span>
-              {href === "/partner/requests" && pendingForMe > 0 && (
-                <span className="badge badge-warning badge-sm">{pendingForMe}</span>
-              )}
+              {!!badge[href] && <span className="badge badge-warning badge-sm">{badge[href]}</span>}
             </Link>
           </li>
         );
       })}
+      <li className="h-full">
+        <button
+          onClick={openTutorial}
+          className="hover:bg-base-300 h-full px-4 text-sm flex items-center whitespace-nowrap"
+        >
+          How it works
+        </button>
+      </li>
     </>
   );
 };
@@ -149,7 +168,9 @@ export const Header = () => {
       </div>
       <AutoReleaser />
       <RequestNotifier />
+      <Tutorial />
       <div className="navbar-end grow mr-4">
+        <NotificationBell />
         <RoleBadge />
         <RainbowKitCustomConnectButton />
         {isLocalNetwork && <FaucetButton />}

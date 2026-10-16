@@ -39,7 +39,7 @@ export const Certificate = ({
 }: CertificateProps) => (
   <article className="certificate h-full">
     <div className="certificate-inner flex flex-col gap-4">
-      {(locked || stampText) && <div className={`stamp ${stampClassName}`}>{stampText ?? "Locked in vault"}</div>}
+      {(locked || stampText) && <div className={`stamp ${stampClassName}`}>{stampText ?? "Locked in a deal"}</div>}
 
       <header className="flex items-start gap-3 pr-24">
         <div className="text-3xl leading-none" aria-hidden>
@@ -52,7 +52,7 @@ export const Certificate = ({
       </header>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm m-0">
-        <dt className="opacity-60">Number</dt>
+        <dt className="opacity-60">Deed no.</dt>
         <dd className="serial m-0 break-all">{serial ?? "–"}</dd>
         <dt className="opacity-60">Token</dt>
         <dd className="serial m-0">{tokenId !== undefined ? `#${tokenId.toString()}` : "–"}</dd>

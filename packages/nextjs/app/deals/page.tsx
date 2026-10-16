@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Address } from "@scaffold-ui/components";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
+import { RegistrationStatus } from "~~/components/rwa/RegistrationStatus";
 import { DEAL_BADGE, DEAL_STATUS, assetIcon, formatCountdown, formatTime, sameAddress } from "~~/components/rwa/utils";
 import { useChainNow } from "~~/hooks/rwa/useChainNow";
 import { useScaffoldReadContract, useScaffoldWriteContract, useTargetNetwork } from "~~/hooks/scaffold-eth";
@@ -91,11 +92,13 @@ const DealCard = ({ deal }: { deal: Deal }) => {
         {isLocked && (
           <div className="flex items-center justify-between bg-base-200 rounded-xl px-4 py-3">
             <span className="text-sm opacity-70">
-              {secondsLeft > 0 ? "Releases automatically in" : "Releasing to receiver…"}
+              {secondsLeft > 0 ? "Unlocks automatically in" : "Unlocking now…"}
             </span>
             <span className="font-display text-2xl">{formatCountdown(secondsLeft)}</span>
           </div>
         )}
+
+        {deal.status === 2 && isReceiver && <RegistrationStatus tokenId={deal.tokenId} />}
 
         {isLocked && ((isSender && secondsLeft > 0) || canRelease) && (
           <div className="card-actions justify-end items-center">

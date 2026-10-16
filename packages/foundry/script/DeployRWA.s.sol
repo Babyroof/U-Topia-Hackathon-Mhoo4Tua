@@ -20,7 +20,7 @@ contract DeployRWA is ScaffoldETHDeploy {
         // Local chain only: a ready-made demo partner (Anvil test account #2, public test key).
         // On Fuji, the admin adds real partner wallets from the Admin page.
         if (block.chainid == 31337) {
-            rwa.setPartner(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, "Siam Custody Bank (demo)", true);
+            rwa.setPartner(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, "[Example] Land Office (local)", true);
         }
 
         ConditionalVault vault = new ConditionalVault(address(rwa));

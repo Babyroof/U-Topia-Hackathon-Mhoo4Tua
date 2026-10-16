@@ -95,6 +95,16 @@ yarn deploy --network avalancheFuji
 
 Then set `targetNetworks: [chains.avalancheFuji]` in `packages/nextjs/scaffold.config.ts`.
 
+### Automatic release (keeper)
+
+Deals unlock on their own: a keeper checks every 30 seconds and releases every deal whose time has come (`checkUpkeep` → `performUpkeep`, the Chainlink Automation interface).
+
+```bash
+yarn keeper   # terminal 4, keep it running during the demo
+```
+
+It uses `KEEPER_PRIVATE_KEY` from `packages/nextjs/.env.local` (a throwaway testnet wallet with a little AVAX); on the local chain it falls back to Anvil's public test account. The web app also asks `/api/keeper` to release due deals while it is open.
+
 ### Demo accounts
 
 The app never asks for a private key: every action is signed in your own wallet (MetaMask or Core).

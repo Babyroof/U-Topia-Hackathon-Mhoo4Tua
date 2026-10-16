@@ -59,7 +59,7 @@ const VaultPage: NextPage = () => {
             <ParkedCard key={`r-${r.id.toString()}`} redemptionId={r.id} tokenId={r.tokenId} />
           ))}
           {(tokenIds ?? []).map(id => (
-            <AssetCard key={id.toString()} tokenId={id} deals={deals ?? []} />
+            <AssetCard key={id.toString()} tokenId={id} />
           ))}
         </div>
       )}
