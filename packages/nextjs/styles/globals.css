@@ -349,3 +349,44 @@ body {
 .badge {
   font-weight: 600;
 }
+
+/* Inline notices: our own classes so theme alert colours can't override them */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  line-height: 1.45;
+}
+.notice-warning {
+  background: #fff6e5;
+  color: #5c3800;
+  border-color: #f0cf8e;
+}
+.notice-error {
+  background: #fdeced;
+  color: #7f161b;
+  border-color: #f1b0b3;
+}
+.notice-success {
+  background: #e6f7ef;
+  color: #0a5139;
+  border-color: #a6dfc4;
+}
+[data-theme="dark"] .notice-warning {
+  background: #3a2a0c;
+  color: #ffdca0;
+  border-color: #6b4d16;
+}
+[data-theme="dark"] .notice-error {
+  background: #3d1517;
+  color: #ffc2c4;
+  border-color: #6e2629;
+}
+[data-theme="dark"] .notice-success {
+  background: #0f3326;
+  color: #b7f0d6;
+  border-color: #1f5c45;
+}

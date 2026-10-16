@@ -37,7 +37,7 @@ export const RevealBurnerPKModal = () => {
             </label>
             <div>
               <p className="text-lg font-semibold m-0 p-0">Copy Burner Wallet Private Key</p>
-              <div role="alert" className="alert alert-warning mt-4">
+              <div role="alert" className="notice notice-warning mt-4">
                 <ShieldExclamationIcon className="h-6 w-6" />
                 <span className="font-semibold">
                   Burner wallets are intended for local development only and are not safe for storing real funds.

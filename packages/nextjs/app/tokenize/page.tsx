@@ -182,7 +182,7 @@ const TokenizePage: NextPage = () => {
       </div>
 
       {done && (
-        <div className="alert alert-success w-full max-w-xl">
+        <div className="notice notice-success w-full max-w-xl">
           <span>
             Request sent. Track it in{" "}
             <Link href="/requests" className="link">

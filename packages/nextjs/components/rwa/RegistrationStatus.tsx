@@ -12,7 +12,7 @@ export const RegistrationStatus = ({ tokenId }: { tokenId: bigint }) => {
   if (needsRegistration === undefined) return null;
 
   return needsRegistration ? (
-    <div className="alert alert-warning py-2 text-sm">
+    <div className="notice notice-warning py-2 text-sm">
       <span>
         <b>Waiting for land-office registration.</b> Go to the land office to register the transfer so it takes legal
         effect.

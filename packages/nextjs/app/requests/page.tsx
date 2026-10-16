@@ -55,7 +55,7 @@ const MyRequestsPage: NextPage = () => {
                     </span>
                   </div>
                   {r.status === 3 && (
-                    <div className="alert alert-error mt-3 py-2 text-sm">
+                    <div className="notice notice-error mt-3 py-2 text-sm">
                       <span>
                         <b>Rejected because:</b> {r.rejectReason || "No reason given"}
                       </span>
