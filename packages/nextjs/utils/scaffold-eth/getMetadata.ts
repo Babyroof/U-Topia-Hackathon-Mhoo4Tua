@@ -45,6 +45,7 @@ export const getMetadata = ({
     },
     icons: {
       icon: [
+        { url: "/phaendin-mark.svg", type: "image/svg+xml" },
         {
           url: "/favicon.png",
           sizes: "32x32",
