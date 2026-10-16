@@ -44,7 +44,9 @@ export type TimelineEntry = {
 
 const short = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "?");
 
+// getLogs is fine at demo scale on Fuji; production would read these from an indexer (e.g. Ponder)
 const useEvents = (contractName: "RWAToken" | "ConditionalVault", eventName: string) =>
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   useScaffoldEventHistory({ contractName, eventName: eventName as any, watch: true, blockData: true } as any).data as
     | any[]
     | undefined;

@@ -55,14 +55,22 @@ const Home: NextPage = () => {
           <Certificate
             tokenId={1}
             assetType="Land Title Deed"
-            name="Deed no. 00000, [example], [example], [example]"
+            name="Deed no. 00000, Chang Phueak, Mueang Chiang Mai, Chiang Mai"
             serial="00000"
             issuerName="Land Office"
             issuedAt={Math.floor(new Date("2026-10-16T09:00:00+07:00").getTime() / 1000)}
             locked
             stampClassName="stamp-in"
           >
-            <p className="text-xs opacity-60 m-0">Sample certificate. Partner name is illustrative.</p>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm m-0">
+              <dt className="opacity-60">Parcel no.</dt>
+              <dd className="m-0">0000</dd>
+              <dt className="opacity-60">Area</dt>
+              <dd className="m-0">2 rai 1 ngan 50 sq. wa</dd>
+              <dt className="opacity-60">Locked for</dt>
+              <dd className="m-0">0x8f3a…91c2 until 1 Nov 2026</dd>
+            </dl>
+            <p className="text-xs opacity-60 m-0">Sample certificate with made-up data.</p>
           </Certificate>
         </div>
       </section>

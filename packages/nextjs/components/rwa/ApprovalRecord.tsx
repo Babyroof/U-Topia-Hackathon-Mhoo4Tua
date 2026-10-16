@@ -33,6 +33,8 @@ export const ApprovalRecord = ({
     functionName: "partnerName",
     args: [partner],
   });
+  // getLogs is fine at demo scale on Fuji; production would read these from an indexer (e.g. Ponder)
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const { data: events } = useScaffoldEventHistory({
     contractName: "RWAToken",
     eventName: "RequestApproved",
